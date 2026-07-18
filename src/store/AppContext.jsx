@@ -142,6 +142,13 @@ export function AppProvider({ children }) {
     if (!user) { openLogin(); return }
     setTodos(prev => ({ ...prev, [isoDate]: (prev[isoDate] || []).filter(t => t.id !== id) }))
   }
+  function updateTodo(isoDate, id, changes) {
+    if (!user) { openLogin(); return }
+    setTodos(prev => ({
+      ...prev,
+      [isoDate]: (prev[isoDate] || []).map(t => t.id === id ? { ...t, ...changes } : t),
+    }))
+  }
 
   // Goal operations
   function getGoals(scope, key) { return goals[scope]?.[key] || [] }
@@ -175,7 +182,7 @@ export function AppProvider({ children }) {
     state: uiState,
     dispatch,
     loaded,
-    todos: { getTodos, addTodo, toggleTodo, deleteTodo },
+    todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo },
     goals: { getGoals, addGoal, toggleGoal, deleteGoal },
   }
 

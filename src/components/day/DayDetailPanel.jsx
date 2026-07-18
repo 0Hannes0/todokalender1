@@ -7,7 +7,7 @@ import { TodoList } from '../todos/TodoList'
 import { TodoForm } from '../todos/TodoForm'
 
 export function DayDetailPanel() {
-  const { state, dispatch, todos: { getTodos, addTodo, toggleTodo, deleteTodo } } = useApp()
+  const { state, dispatch, todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo } } = useApp()
   const { selectedDay } = state
   const isoDate = toIsoDate(selectedDay)
   const todos = getTodos(isoDate)
@@ -58,6 +58,7 @@ export function DayDetailPanel() {
           todos={todos}
           onToggle={id => toggleTodo(isoDate, id)}
           onDelete={id => deleteTodo(isoDate, id)}
+          onUpdate={(id, changes) => updateTodo(isoDate, id, changes)}
         />
       </div>
 

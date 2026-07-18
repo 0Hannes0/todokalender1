@@ -8,7 +8,7 @@ import { MiniCalendar } from '../calendar/MiniCalendar'
 import { GoalsPanel } from '../goals/GoalsPanel'
 
 export function LeftPanel({ mobileSection }) {
-  const { state, todos: { getTodos, addTodo, toggleTodo, deleteTodo } } = useApp()
+  const { state, todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo } } = useApp()
   const { selectedDay } = state
 
   const today = new Date()
@@ -66,6 +66,7 @@ export function LeftPanel({ mobileSection }) {
               todos={todos}
               onToggle={id => toggleTodo(isoDate, id)}
               onDelete={id => deleteTodo(isoDate, id)}
+              onUpdate={(id, changes) => updateTodo(isoDate, id, changes)}
             />
           </div>
 
@@ -120,6 +121,7 @@ export function LeftPanel({ mobileSection }) {
           todos={todos}
           onToggle={id => toggleTodo(isoDate, id)}
           onDelete={id => deleteTodo(isoDate, id)}
+          onUpdate={(id, changes) => updateTodo(isoDate, id, changes)}
         />
       </div>
 

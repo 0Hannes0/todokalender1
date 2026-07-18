@@ -21,7 +21,8 @@ export function LoginModal({ onClose }) {
         onClose()
       } else {
         await signUp(email, password)
-        setSuccess('Bestätigungs-E-Mail gesendet! Bitte E-Mail prüfen.')
+        await signIn(email, password)
+        onClose()
       }
     } catch (err) {
       const msg = err.message || ''

@@ -4,8 +4,8 @@ import { useLoginGate } from '../../store/LoginGateContext'
 import { formatMonthYear, formatWeekRange, toYearKey } from '../../utils/dateHelpers'
 
 const VIEWS = [
-  { key: 'month', label: 'Monat' },
   { key: 'week',  label: 'Woche' },
+  { key: 'month', label: 'Monat' },
   { key: 'year',  label: 'Jahr'  },
 ]
 
