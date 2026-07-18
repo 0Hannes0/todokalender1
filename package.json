@@ -1,7 +1,6 @@
 {
   "name": "todokalender",
   "version": "1.0.0",
-  "description": "",
   "description": "Kalender-App mit Tages-Todos und Zielen",
   "type": "module",
   "scripts": {
@@ -10,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
     "date-fns": "^4.4.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

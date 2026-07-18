@@ -1,6 +1,7 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useReducer, useState, useEffect, useRef } from 'react'
 import { addMonths, addWeeks, addYears } from '../utils/dateHelpers'
-import { useStorage } from '../hooks/useStorage'
+import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 const AppContext = createContext(null)
 
@@ -37,12 +38,85 @@ function reducer(state, action) {
 
 function uuid() { return crypto.randomUUID() }
 
+// --- Supabase helpers ---
+async function loadUserData(uid) {
+  const { data, error } = await supabase
+    .from('user_data')
+    .select('todos, goals')
+    .eq('user_id', uid)
+    .single()
+  if (error && error.code !== 'PGRST116') console.error('load error', error)
+  return data || null
+}
+
+async function saveUserData(uid, todos, goals) {
+  const { error } = await supabase
+    .from('user_data')
+    .upsert({ user_id: uid, todos, goals, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+  if (error) console.error('save error', error)
+}
+
+// --- localStorage fallback (for when not logged in) ---
+function lsGet(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback } catch { return fallback }
+}
+function lsSet(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+
 export function AppProvider({ children }) {
+  const { user } = useAuth()
   const [uiState, dispatch] = useReducer(reducer, initialState)
 
-  // Shared todo and goal storage — single source of truth
-  const [todos, setTodos] = useStorage('tk_todos', {})
-  const [goals, setGoals] = useStorage('tk_goals', { weekly: {}, monthly: {}, yearly: {} })
+  const [todos, setTodosRaw] = useState(() => lsGet('tk_todos', {}))
+  const [goals, setGoalsRaw] = useState(() => lsGet('tk_goals', { weekly: {}, monthly: {}, yearly: {} }))
+  const [loaded, setLoaded] = useState(false)
+
+  // Save timer ref for debounced remote writes
+  const saveTimer = useRef(null)
+
+  // Load from Supabase when user logs in
+  useEffect(() => {
+    if (!user) {
+      setLoaded(true)
+      return
+    }
+    setLoaded(false)
+    loadUserData(user.id).then(data => {
+      if (data) {
+        setTodosRaw(data.todos || {})
+        setGoalsRaw(data.goals || { weekly: {}, monthly: {}, yearly: {} })
+      }
+      setLoaded(true)
+    })
+  }, [user?.id])
+
+  // Debounced sync to Supabase (500ms after last change)
+  function persist(newTodos, newGoals) {
+    if (user) {
+      clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => saveUserData(user.id, newTodos, newGoals), 500)
+    } else {
+      lsSet('tk_todos', newTodos)
+      lsSet('tk_goals', newGoals)
+    }
+  }
+
+  function setTodos(updater) {
+    setTodosRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      persist(next, goals)
+      return next
+    })
+  }
+
+  function setGoals(updater) {
+    setGoalsRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      persist(todos, next)
+      return next
+    })
+  }
 
   // Todo operations
   function getTodos(isoDate) { return todos[isoDate] || [] }
@@ -88,6 +162,7 @@ export function AppProvider({ children }) {
   const value = {
     state: uiState,
     dispatch,
+    loaded,
     todos: { getTodos, addTodo, toggleTodo, deleteTodo },
     goals: { getGoals, addGoal, toggleGoal, deleteGoal },
   }
