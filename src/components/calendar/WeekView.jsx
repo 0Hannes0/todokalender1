@@ -1,11 +1,20 @@
 import { isToday } from 'date-fns'
 import { useApp } from '../../store/AppContext'
+import { useAuth } from '../../store/AuthContext'
+import { useLoginGate } from '../../store/LoginGateContext'
 import { buildWeekRow, WEEKDAY_LABELS, toIsoDate } from '../../utils/dateHelpers'
 
 export function WeekView() {
   const { state, dispatch, todos: { getTodos } } = useApp()
+  const { user } = useAuth()
+  const { openLogin } = useLoginGate()
   const { currentDate, selectedDay } = state
   const days = buildWeekRow(currentDate)
+
+  function handleDayClick(date) {
+    if (!user) { openLogin(); return }
+    dispatch({ type: 'SELECT_DAY', payload: date })
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -18,7 +27,7 @@ export function WeekView() {
             <div key={iso} className="text-center py-3 border-r border-border last:border-r-0">
               <p className="text-[11px] font-medium text-text-3 uppercase tracking-wider">{WEEKDAY_LABELS[i]}</p>
               <button
-                onClick={() => dispatch({ type: 'SELECT_DAY', payload: date })}
+                onClick={() => handleDayClick(date)}
                 className={`mt-1 w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-semibold transition-all
                   ${today ? 'bg-accent text-white' : isSelected ? 'bg-accent-soft text-accent ring-1 ring-accent' : 'text-text hover:bg-surface-3'}`}
               >

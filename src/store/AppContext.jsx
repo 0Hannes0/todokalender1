@@ -77,9 +77,13 @@ export function AppProvider({ children }) {
   // Save timer ref for debounced remote writes
   const saveTimer = useRef(null)
 
-  // Load from Supabase when user logs in
+  // Load from Supabase when user logs in, clear when logs out
   useEffect(() => {
     if (!user) {
+      // Clear all data on logout
+      setTodosRaw({})
+      setGoalsRaw({ weekly: {}, monthly: {}, yearly: {} })
+      dispatch({ type: 'CLOSE_DAY' })
       setLoaded(true)
       return
     }
