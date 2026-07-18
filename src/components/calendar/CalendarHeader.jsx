@@ -1,4 +1,6 @@
 import { useApp } from '../../store/AppContext'
+import { useAuth } from '../../store/AuthContext'
+import { useLoginGate } from '../../store/LoginGateContext'
 import { formatMonthYear, formatWeekRange, toYearKey } from '../../utils/dateHelpers'
 
 const VIEWS = [
@@ -9,6 +11,8 @@ const VIEWS = [
 
 export function CalendarHeader({ mobile = false }) {
   const { state, dispatch } = useApp()
+  const { user, signOut } = useAuth()
+  const { openLogin } = useLoginGate()
   const { view, currentDate } = state
 
   function label() {
@@ -37,15 +41,33 @@ export function CalendarHeader({ mobile = false }) {
         )}
       </div>
 
-      {/* View switcher */}
-      <div className="flex bg-surface-3 rounded-xl p-1 gap-0.5">
-        {VIEWS.map(({ key, label: lbl }) => (
-          <button key={key} onClick={() => dispatch({ type: 'SET_VIEW', payload: key })}
-            className={`text-[11px] font-medium rounded-lg transition-all ${mobile ? 'px-2.5 py-1.5' : 'px-3 py-1.5'}
-              ${view === key ? 'bg-white text-accent shadow-sm font-semibold' : 'text-text-3 hover:text-text-2'}`}>
-            {lbl}
+      <div className="flex items-center gap-2">
+        {/* View switcher */}
+        <div className="flex bg-surface-3 rounded-xl p-1 gap-0.5">
+          {VIEWS.map(({ key, label: lbl }) => (
+            <button key={key} onClick={() => dispatch({ type: 'SET_VIEW', payload: key })}
+              className={`text-[11px] font-medium rounded-lg transition-all ${mobile ? 'px-2.5 py-1.5' : 'px-3 py-1.5'}
+                ${view === key ? 'bg-white text-accent shadow-sm font-semibold' : 'text-text-3 hover:text-text-2'}`}>
+              {lbl}
+            </button>
+          ))}
+        </div>
+
+        {/* Auth button */}
+        {user ? (
+          <button onClick={signOut} aria-label="Ausloggen"
+            title={user.email}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-3 active:bg-surface-3 text-text-3 transition-colors flex-shrink-0">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M6 2H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3M10 10l3-2.5L10 5M13 7.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
-        ))}
+        ) : (
+          <button onClick={openLogin}
+            className="text-[11px] font-medium text-accent border border-accent/30 rounded-lg px-2.5 py-1.5 hover:bg-accent-soft transition-all flex-shrink-0">
+            Einloggen
+          </button>
+        )}
       </div>
     </div>
   )

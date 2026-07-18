@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useState, useEffect, useRef } fr
 import { addMonths, addWeeks, addYears } from '../utils/dateHelpers'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { useLoginGate } from './LoginGateContext'
 
 const AppContext = createContext(null)
 
@@ -66,6 +67,7 @@ function lsSet(key, value) {
 
 export function AppProvider({ children }) {
   const { user } = useAuth()
+  const { openLogin } = useLoginGate()
   const [uiState, dispatch] = useReducer(reducer, initialState)
 
   const [todos, setTodosRaw] = useState(() => lsGet('tk_todos', {}))
@@ -121,22 +123,26 @@ export function AppProvider({ children }) {
   // Todo operations
   function getTodos(isoDate) { return todos[isoDate] || [] }
   function addTodo(isoDate, label, color) {
+    if (!user) { openLogin(); return }
     const newTodo = { id: uuid(), label: label.trim(), completed: false, color }
     setTodos(prev => ({ ...prev, [isoDate]: [...(prev[isoDate] || []), newTodo] }))
   }
   function toggleTodo(isoDate, id) {
+    if (!user) { openLogin(); return }
     setTodos(prev => ({
       ...prev,
       [isoDate]: (prev[isoDate] || []).map(t => t.id === id ? { ...t, completed: !t.completed } : t),
     }))
   }
   function deleteTodo(isoDate, id) {
+    if (!user) { openLogin(); return }
     setTodos(prev => ({ ...prev, [isoDate]: (prev[isoDate] || []).filter(t => t.id !== id) }))
   }
 
   // Goal operations
   function getGoals(scope, key) { return goals[scope]?.[key] || [] }
   function addGoal(scope, key, label) {
+    if (!user) { openLogin(); return }
     const newGoal = { id: uuid(), label: label.trim(), completed: false }
     setGoals(prev => ({
       ...prev,
@@ -144,6 +150,7 @@ export function AppProvider({ children }) {
     }))
   }
   function toggleGoal(scope, key, id) {
+    if (!user) { openLogin(); return }
     setGoals(prev => ({
       ...prev,
       [scope]: {
@@ -153,6 +160,7 @@ export function AppProvider({ children }) {
     }))
   }
   function deleteGoal(scope, key, id) {
+    if (!user) { openLogin(); return }
     setGoals(prev => ({
       ...prev,
       [scope]: { ...prev[scope], [key]: (prev[scope]?.[key] || []).filter(g => g.id !== id) },

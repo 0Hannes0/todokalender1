@@ -1,12 +1,12 @@
 import { AuthProvider, useAuth } from './store/AuthContext'
+import { LoginGateProvider } from './store/LoginGateContext'
 import { AppProvider } from './store/AppContext'
 import { AppShell } from './components/layout/AppShell'
-import { LoginScreen } from './components/auth/LoginScreen'
 
 function Inner() {
   const { user } = useAuth()
 
-  // Still checking session
+  // Still checking session — show spinner
   if (user === undefined) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -15,12 +15,13 @@ function Inner() {
     )
   }
 
-  if (!user) return <LoginScreen />
-
+  // Always show the app — login modal appears on demand
   return (
-    <AppProvider>
-      <AppShell />
-    </AppProvider>
+    <LoginGateProvider>
+      <AppProvider>
+        <AppShell />
+      </AppProvider>
+    </LoginGateProvider>
   )
 }
 
