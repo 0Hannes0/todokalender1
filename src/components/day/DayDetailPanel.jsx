@@ -5,13 +5,11 @@ import { toIsoDate } from '../../utils/dateHelpers'
 import { Modal } from '../ui/Modal'
 import { TodoList } from '../todos/TodoList'
 import { TodoForm } from '../todos/TodoForm'
-import { useTodos } from '../../hooks/useTodos'
 
 export function DayDetailPanel() {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, todos: { getTodos, addTodo, toggleTodo, deleteTodo } } = useApp()
   const { selectedDay } = state
   const isoDate = toIsoDate(selectedDay)
-  const { getTodos, addTodo, toggleTodo, deleteTodo } = useTodos()
   const todos = getTodos(isoDate)
 
   const title = format(selectedDay, "EEEE, d. MMMM yyyy", { locale: de })

@@ -1,14 +1,10 @@
-import { isToday, isSameDay } from 'date-fns'
+import { isToday } from 'date-fns'
 import { useApp } from '../../store/AppContext'
-import { buildWeekRow, WEEKDAY_LABELS, toIsoDate, toWeekKey } from '../../utils/dateHelpers'
-import { useTodos } from '../../hooks/useTodos'
-import { format } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { buildWeekRow, WEEKDAY_LABELS, toIsoDate } from '../../utils/dateHelpers'
 
 export function WeekView() {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, todos: { getTodos } } = useApp()
   const { currentDate, selectedDay } = state
-  const { getTodos } = useTodos()
   const days = buildWeekRow(currentDate)
 
   return (

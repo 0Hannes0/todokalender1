@@ -1,11 +1,9 @@
 import { isSameMonth, isToday } from 'date-fns'
 import { toIsoDate } from '../../utils/dateHelpers'
 import { useApp } from '../../store/AppContext'
-import { useTodos } from '../../hooks/useTodos'
 
 export function DayCell({ date, currentMonth }) {
-  const { state, dispatch } = useApp()
-  const { getTodos } = useTodos()
+  const { state, dispatch, todos: { getTodos } } = useApp()
   const isoDate = toIsoDate(date)
   const today = isToday(date)
   const inMonth = isSameMonth(date, currentMonth)

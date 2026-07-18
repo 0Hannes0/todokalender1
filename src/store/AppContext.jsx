@@ -1,12 +1,13 @@
 import { createContext, useContext, useReducer } from 'react'
 import { addMonths, addWeeks, addYears } from '../utils/dateHelpers'
+import { useStorage } from '../hooks/useStorage'
 
 const AppContext = createContext(null)
 
 const initialState = {
-  view: 'month',       // 'month' | 'week' | 'year'
+  view: 'month',
   currentDate: new Date(),
-  selectedDay: null,   // Date | null
+  selectedDay: null,
 }
 
 function reducer(state, action) {
@@ -34,16 +35,64 @@ function reducer(state, action) {
   }
 }
 
+function uuid() { return crypto.randomUUID() }
+
 export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [uiState, dispatch] = useReducer(reducer, initialState)
 
-  return (
-    <AppContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AppContext.Provider>
-  )
+  // Shared todo and goal storage — single source of truth
+  const [todos, setTodos] = useStorage('tk_todos', {})
+  const [goals, setGoals] = useStorage('tk_goals', { weekly: {}, monthly: {}, yearly: {} })
+
+  // Todo operations
+  function getTodos(isoDate) { return todos[isoDate] || [] }
+  function addTodo(isoDate, label, color) {
+    const newTodo = { id: uuid(), label: label.trim(), completed: false, color }
+    setTodos(prev => ({ ...prev, [isoDate]: [...(prev[isoDate] || []), newTodo] }))
+  }
+  function toggleTodo(isoDate, id) {
+    setTodos(prev => ({
+      ...prev,
+      [isoDate]: (prev[isoDate] || []).map(t => t.id === id ? { ...t, completed: !t.completed } : t),
+    }))
+  }
+  function deleteTodo(isoDate, id) {
+    setTodos(prev => ({ ...prev, [isoDate]: (prev[isoDate] || []).filter(t => t.id !== id) }))
+  }
+
+  // Goal operations
+  function getGoals(scope, key) { return goals[scope]?.[key] || [] }
+  function addGoal(scope, key, label) {
+    const newGoal = { id: uuid(), label: label.trim(), completed: false }
+    setGoals(prev => ({
+      ...prev,
+      [scope]: { ...prev[scope], [key]: [...(prev[scope]?.[key] || []), newGoal] },
+    }))
+  }
+  function toggleGoal(scope, key, id) {
+    setGoals(prev => ({
+      ...prev,
+      [scope]: {
+        ...prev[scope],
+        [key]: (prev[scope]?.[key] || []).map(g => g.id === id ? { ...g, completed: !g.completed } : g),
+      },
+    }))
+  }
+  function deleteGoal(scope, key, id) {
+    setGoals(prev => ({
+      ...prev,
+      [scope]: { ...prev[scope], [key]: (prev[scope]?.[key] || []).filter(g => g.id !== id) },
+    }))
+  }
+
+  const value = {
+    state: uiState,
+    dispatch,
+    todos: { getTodos, addTodo, toggleTodo, deleteTodo },
+    goals: { getGoals, addGoal, toggleGoal, deleteGoal },
+  }
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
 
-export function useApp() {
-  return useContext(AppContext)
-}
+export function useApp() { return useContext(AppContext) }

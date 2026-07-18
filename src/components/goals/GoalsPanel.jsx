@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../../store/AppContext'
 import { toWeekKey, toMonthKey, toYearKey } from '../../utils/dateHelpers'
-import { useGoals } from '../../hooks/useGoals'
 import { GoalList } from './GoalList'
 import { GoalForm } from './GoalForm'
 
@@ -18,9 +17,8 @@ function getKey(scope, date) {
 }
 
 export function GoalsPanel() {
-  const { state } = useApp()
+  const { state, goals: { getGoals, addGoal, toggleGoal, deleteGoal } } = useApp()
   const { currentDate, view } = state
-  const { getGoals, addGoal, toggleGoal, deleteGoal } = useGoals()
 
   // Default active tab mirrors current calendar view
   const defaultScope = SCOPES.find(s => s.view === view)?.key || 'monthly'
