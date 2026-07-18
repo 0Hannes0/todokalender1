@@ -1,14 +1,24 @@
 import { useState } from 'react'
 import { useApp } from '../../store/AppContext'
+import { useAuth } from '../../store/AuthContext'
+import { useLoginGate } from '../../store/LoginGateContext'
 import { buildMonthGrid, WEEKDAY_LABELS, toIsoDate, formatMonthYear, addMonths } from '../../utils/dateHelpers'
 import { isToday, isSameMonth } from 'date-fns'
 
 // Mini-Kalender für die linke Spalte
 export function MiniCalendar() {
   const { state, dispatch } = useApp()
+  const { user } = useAuth()
+  const { openLogin } = useLoginGate()
   const { currentDate, selectedDay } = state
   const [miniDate, setMiniDate] = useState(currentDate)
   const cells = buildMonthGrid(miniDate)
+
+  function handleDayClick(date) {
+    if (!user) { openLogin(); return }
+    dispatch({ type: 'SELECT_DAY', payload: date })
+    dispatch({ type: 'GO_TO_DATE', payload: date })
+  }
 
   return (
     <div className="p-4">
@@ -44,10 +54,7 @@ export function MiniCalendar() {
           return (
             <button
               key={iso}
-              onClick={() => {
-                dispatch({ type: 'SELECT_DAY', payload: date })
-                dispatch({ type: 'GO_TO_DATE', payload: date })
-              }}
+              onClick={() => handleDayClick(date)}
               className={`w-7 h-7 mx-auto flex items-center justify-center rounded-full text-[11px] font-medium transition-all
                 ${!inMonth ? 'text-text-4' : ''}
                 ${today && !selected ? 'text-accent font-semibold' : ''}

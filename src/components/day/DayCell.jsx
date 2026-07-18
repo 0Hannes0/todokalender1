@@ -1,9 +1,13 @@
 import { isSameMonth, isToday } from 'date-fns'
 import { toIsoDate } from '../../utils/dateHelpers'
 import { useApp } from '../../store/AppContext'
+import { useAuth } from '../../store/AuthContext'
+import { useLoginGate } from '../../store/LoginGateContext'
 
 export function DayCell({ date, currentMonth }) {
   const { state, dispatch, todos: { getTodos } } = useApp()
+  const { user } = useAuth()
+  const { openLogin } = useLoginGate()
   const isoDate = toIsoDate(date)
   const today = isToday(date)
   const inMonth = isSameMonth(date, currentMonth)
@@ -11,9 +15,14 @@ export function DayCell({ date, currentMonth }) {
   const todos = getTodos(isoDate)
   const dots = todos.slice(0, 5)
 
+  function handleClick() {
+    if (!user) { openLogin(); return }
+    dispatch({ type: 'SELECT_DAY', payload: date })
+  }
+
   return (
     <button
-      onClick={() => dispatch({ type: 'SELECT_DAY', payload: date })}
+      onClick={handleClick}
       className={`
         w-full p-1.5 sm:p-2 text-left flex flex-col gap-0.5 sm:gap-1 transition-all group
         border-b border-r border-border min-h-[60px] sm:min-h-[90px]
