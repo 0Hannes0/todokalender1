@@ -9,46 +9,39 @@ export function DayCell({ date, currentMonth }) {
   const inMonth = isSameMonth(date, currentMonth)
   const isSelected = state.selectedDay && toIsoDate(state.selectedDay) === isoDate
   const todos = getTodos(isoDate)
-  const dots = todos.slice(0, 4)
-  const overflow = todos.length - 4
+  const dots = todos.slice(0, 5)
 
   return (
     <button
       onClick={() => dispatch({ type: 'SELECT_DAY', payload: date })}
       className={`
-        w-full min-h-20 p-2.5 rounded-xl text-left transition-all flex flex-col gap-1.5 group
-        focus:outline-none focus:ring-1 focus:ring-wine
-        ${!inMonth ? 'opacity-20' : ''}
-        ${isSelected
-          ? 'bg-wine/20 ring-1 ring-wine'
-          : 'hover:bg-surface-2'
-        }
+        w-full min-h-[90px] p-2 text-left flex flex-col gap-1 transition-all group
+        border-b border-r border-border
+        focus:outline-none focus:z-10 focus:ring-1 focus:ring-inset focus:ring-accent
+        ${!inMonth ? 'bg-surface-2' : 'bg-surface hover:bg-accent-soft/30'}
+        ${isSelected ? 'ring-1 ring-inset ring-accent bg-accent-soft/40' : ''}
       `}
-      aria-label={`${isoDate}${todos.length ? `, ${todos.length} Aufgaben` : ''}`}
     >
-      {/* Day number */}
       <span className={`
-        text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full self-start flex-shrink-0
-        ${today
-          ? 'bg-gradient-to-br from-wine-bright to-plum text-white font-semibold shadow-lg shadow-wine/30'
-          : isSelected ? 'text-accent' : 'text-text-2 group-hover:text-text'
-        }
+        text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0
+        ${today ? 'bg-accent text-white' : !inMonth ? 'text-text-4' : isSelected ? 'text-accent' : 'text-text-2 group-hover:text-text'}
       `}>
         {date.getDate()}
       </span>
 
-      {/* Todo dots */}
       {dots.length > 0 && (
-        <div className="flex gap-1 flex-wrap px-0.5">
+        <div className="flex flex-col gap-0.5 w-full">
           {dots.map(todo => (
-            <span
+            <div
               key={todo.id}
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: todo.color }}
-            />
+              className={`text-[10px] leading-tight px-1.5 py-0.5 rounded-md truncate max-w-full ${todo.completed ? 'opacity-40 line-through' : ''}`}
+              style={{ background: todo.color + '28', color: todo.color, borderLeft: `2px solid ${todo.color}` }}
+            >
+              {todo.label}
+            </div>
           ))}
-          {overflow > 0 && (
-            <span className="text-[9px] text-text-muted self-center leading-none">+{overflow}</span>
+          {todos.length > 5 && (
+            <span className="text-[10px] text-text-3 px-1">+{todos.length - 5} mehr</span>
           )}
         </div>
       )}
