@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useState, useEffect, useRef } from 'react'
-import { addMonths, addWeeks, addYears } from '../utils/dateHelpers'
+import { addMonths, addWeeks, addYears, toWeekKey } from '../utils/dateHelpers'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import { useLoginGate } from './LoginGateContext'
@@ -152,13 +152,39 @@ export function AppProvider({ children }) {
 
   // Goal operations
   function getGoals(scope, key) { return goals[scope]?.[key] || [] }
-  function addGoal(scope, key, label) {
+  function addGoal(scope, key, label, targetCount = null, keyword = null) {
     if (!user) { openLogin(); return }
-    const newGoal = { id: uuid(), label: label.trim(), completed: false }
+    const newGoal = {
+      id: uuid(),
+      label: label.trim(),
+      completed: false,
+      ...(targetCount ? { targetCount: Number(targetCount), keyword: (keyword || '').trim().toLowerCase() } : {}),
+    }
     setGoals(prev => ({
       ...prev,
       [scope]: { ...prev[scope], [key]: [...(prev[scope]?.[key] || []), newGoal] },
     }))
+  }
+
+  // Returns how many completed todos in the scope's date range match the goal keyword
+  function getGoalProgress(scope, scopeKey, goal) {
+    if (!goal.targetCount || !goal.keyword) return null
+    const kw = goal.keyword.toLowerCase()
+    let count = 0
+    const entries = Object.entries(todos)
+    for (const [isoDate, dayTodos] of entries) {
+      // Check if this date belongs to the scope
+      let belongs = false
+      if (scope === 'monthly') belongs = isoDate.startsWith(scopeKey)
+      else if (scope === 'yearly') belongs = isoDate.startsWith(scopeKey)
+      else if (scope === 'weekly') {
+        belongs = toWeekKey(new Date(isoDate)) === scopeKey
+      }
+      if (belongs) {
+        count += dayTodos.filter(t => t.completed && t.label.toLowerCase().includes(kw)).length
+      }
+    }
+    return count
   }
   function toggleGoal(scope, key, id) {
     if (!user) { openLogin(); return }
@@ -183,7 +209,7 @@ export function AppProvider({ children }) {
     dispatch,
     loaded,
     todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo },
-    goals: { getGoals, addGoal, toggleGoal, deleteGoal },
+    goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress },
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

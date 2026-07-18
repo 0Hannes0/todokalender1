@@ -17,7 +17,7 @@ function getKey(scope, date) {
 }
 
 export function GoalsPanel() {
-  const { state, goals: { getGoals, addGoal, toggleGoal, deleteGoal } } = useApp()
+  const { state, goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress } } = useApp()
   const [activeScope, setActiveScope] = useState('monthly')
   const scopeKey = getKey(activeScope, state.currentDate)
   const goals = getGoals(activeScope, scopeKey)
@@ -36,8 +36,9 @@ export function GoalsPanel() {
       </div>
       <GoalList goals={goals}
         onToggle={id => toggleGoal(activeScope, scopeKey, id)}
-        onDelete={id => deleteGoal(activeScope, scopeKey, id)} />
-      <GoalForm onAdd={label => addGoal(activeScope, scopeKey, label)} />
+        onDelete={id => deleteGoal(activeScope, scopeKey, id)}
+        getProgress={g => getGoalProgress(activeScope, scopeKey, g)} />
+      <GoalForm onAdd={(label, targetCount, keyword) => addGoal(activeScope, scopeKey, label, targetCount, keyword)} />
     </div>
   )
 }

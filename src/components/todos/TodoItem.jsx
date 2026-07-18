@@ -23,13 +23,16 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
       <div className="flex items-center gap-2.5 px-2 py-2.5">
         {/* Checkbox */}
         <button onClick={() => onToggle(todo.id)}
-          className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all focus:outline-none"
-          style={{ borderColor: todo.color, backgroundColor: todo.completed ? todo.color : 'transparent' }}>
-          {todo.completed && (
-            <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-              <path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
+          className="w-5 h-5 flex items-center justify-center flex-shrink-0 transition-all focus:outline-none">
+          <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 15.5S1.5 10.5 1.5 5.5a4 4 0 0 1 7.5-1.9A4 4 0 0 1 16.5 5.5c0 5-7.5 10-7.5 10z"
+              stroke={todo.color}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill={todo.completed ? todo.color : 'transparent'}
+            />
+          </svg>
         </button>
 
         {/* Label — tap to edit */}
