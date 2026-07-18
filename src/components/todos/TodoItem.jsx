@@ -4,17 +4,18 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
   const [editing, setEditing] = useState(false)
   const [editLabel, setEditLabel] = useState(todo.label)
   const [editNotes, setEditNotes] = useState(todo.notes || '')
+  const [editColor, setEditColor] = useState(todo.color)
 
   function saveEdit() {
     if (editLabel.trim()) {
-      onUpdate(todo.id, { label: editLabel.trim(), notes: editNotes })
+      onUpdate(todo.id, { label: editLabel.trim(), notes: editNotes, color: editColor })
     }
     setEditing(false)
   }
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() }
-    if (e.key === 'Escape') { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || '') }
+    if (e.key === 'Escape') { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color) }
   }
 
   return (
@@ -51,18 +52,25 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
         </button>
       </div>
 
-      {/* Edit panel */}
+        {/* Edit panel */}
       {editing && (
         <div className="px-3 pb-3 flex flex-col gap-2">
-          <input
-            autoFocus
-            value={editLabel}
-            onChange={e => setEditLabel(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Aufgabe"
-            className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[13px] text-text focus:outline-none focus:border-accent-mid"
-            maxLength={120}
-          />
+          <div className="flex gap-2">
+            <label className="relative flex-shrink-0 w-9 h-9 flex items-center justify-center cursor-pointer">
+              <span className="w-6 h-6 rounded-full ring-1 ring-black/10" style={{ backgroundColor: editColor }} />
+              <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" aria-label="Farbe" />
+            </label>
+            <input
+              autoFocus
+              value={editLabel}
+              onChange={e => setEditLabel(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Aufgabe"
+              className="flex-1 bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[13px] text-text focus:outline-none focus:border-accent-mid"
+              maxLength={120}
+            />
+          </div>
           <textarea
             value={editNotes}
             onChange={e => setEditNotes(e.target.value)}
@@ -73,7 +81,7 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
             maxLength={500}
           />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || '') }}
+            <button onClick={() => { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color) }}
               className="text-[12px] text-text-3 px-3 py-1.5 rounded-lg hover:bg-surface-3 transition-colors">
               Abbrechen
             </button>
