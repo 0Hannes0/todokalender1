@@ -7,7 +7,6 @@ export function Modal({ onClose, children, title }) {
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement
-
     const focusable = overlayRef.current?.querySelectorAll(
       'button, input, textarea, [tabindex]:not([tabindex="-1"])'
     )
@@ -21,7 +20,6 @@ export function Modal({ onClose, children, title }) {
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
       }
     }
-
     document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
@@ -31,12 +29,25 @@ export function Modal({ onClose, children, title }) {
 
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0 bg-bg/80 backdrop-blur-md animate-fade-in" onClick={onClose} />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/25 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+
+      {/* Sheet — full-width bottom sheet on mobile, floating card on sm+ */}
       <div
         ref={overlayRef}
-        className="relative z-10 w-full sm:w-auto sm:min-w-[420px] sm:max-w-lg mx-4 mb-4 sm:mb-0 rounded-2xl overflow-hidden animate-slide-up border border-border shadow-2xl shadow-bg"
-        style={{ background: 'linear-gradient(145deg, #2e1820 0%, #231219 100%)' }}
+        className="
+          relative z-10 w-full bg-surface overflow-hidden
+          rounded-t-2xl sm:rounded-2xl
+          shadow-2xl border border-border
+          sm:w-auto sm:min-w-[440px] sm:max-w-lg sm:mx-4
+          animate-sheet-up sm:animate-slide-up
+          max-h-[90dvh] flex flex-col
+        "
       >
+        {/* Drag handle — mobile only */}
+        <div className="flex sm:hidden justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full bg-border-2" />
+        </div>
         {children}
       </div>
     </div>,

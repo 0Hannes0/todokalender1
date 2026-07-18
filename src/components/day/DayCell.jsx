@@ -15,10 +15,10 @@ export function DayCell({ date, currentMonth }) {
     <button
       onClick={() => dispatch({ type: 'SELECT_DAY', payload: date })}
       className={`
-        w-full min-h-[90px] p-2 text-left flex flex-col gap-1 transition-all group
-        border-b border-r border-border
+        w-full p-1.5 sm:p-2 text-left flex flex-col gap-0.5 sm:gap-1 transition-all group
+        border-b border-r border-border min-h-[60px] sm:min-h-[90px]
         focus:outline-none focus:z-10 focus:ring-1 focus:ring-inset focus:ring-accent
-        ${!inMonth ? 'bg-surface-2' : 'bg-surface hover:bg-accent-soft/30'}
+        ${!inMonth ? 'bg-surface-2' : 'bg-surface hover:bg-accent-soft/30 active:bg-accent-soft/50'}
         ${isSelected ? 'ring-1 ring-inset ring-accent bg-accent-soft/40' : ''}
       `}
     >
@@ -29,8 +29,9 @@ export function DayCell({ date, currentMonth }) {
         {date.getDate()}
       </span>
 
+      {/* Desktop: label pills */}
       {dots.length > 0 && (
-        <div className="flex flex-col gap-0.5 w-full">
+        <div className="hidden sm:flex flex-col gap-0.5 w-full">
           {dots.map(todo => (
             <div
               key={todo.id}
@@ -41,8 +42,21 @@ export function DayCell({ date, currentMonth }) {
             </div>
           ))}
           {todos.length > 5 && (
-            <span className="text-[10px] text-text-3 px-1">+{todos.length - 5} mehr</span>
+            <span className="text-[10px] text-text-3 px-1">+{todos.length - 5}</span>
           )}
+        </div>
+      )}
+
+      {/* Mobile: dot indicators only */}
+      {dots.length > 0 && (
+        <div className="flex sm:hidden flex-wrap gap-0.5 mt-0.5">
+          {dots.map(todo => (
+            <span
+              key={todo.id}
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: todo.color }}
+            />
+          ))}
         </div>
       )}
     </button>

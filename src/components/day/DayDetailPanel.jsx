@@ -13,15 +13,17 @@ export function DayDetailPanel() {
   const todos = getTodos(isoDate)
   const done = todos.filter(t => t.completed).length
 
-  const title = format(selectedDay, "EEEE, d. MMMM yyyy", { locale: de })
+  const dayLabel = format(selectedDay, "EEEE", { locale: de })
+  const dateLabel = format(selectedDay, "d. MMMM yyyy", { locale: de })
 
   return (
-    <Modal onClose={() => dispatch({ type: 'CLOSE_DAY' })} title={title}>
+    <Modal onClose={() => dispatch({ type: 'CLOSE_DAY' })} title={dateLabel}>
       {/* Header */}
-      <div className="px-5 pt-5 pb-4">
+      <div className="px-5 pt-3 sm:pt-5 pb-4 border-b border-border flex-shrink-0">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-base font-semibold text-text capitalize leading-tight">{title}</h2>
+            <p className="text-[11px] font-semibold text-text-3 uppercase tracking-wider">{dayLabel}</p>
+            <h2 className="text-lg font-semibold text-text mt-0.5">{dateLabel}</h2>
             <p className="text-xs text-text-3 mt-1">
               {todos.length === 0
                 ? 'Noch keine Aufgaben'
@@ -31,7 +33,7 @@ export function DayDetailPanel() {
           <button
             onClick={() => dispatch({ type: 'CLOSE_DAY' })}
             aria-label="Schließen"
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-3 transition-colors text-text-3 hover:text-text focus:outline-none flex-shrink-0 mt-0.5"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-3 active:bg-surface-3 transition-colors text-text-3 hover:text-text focus:outline-none flex-shrink-0"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M10 2L2 10M2 2l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -41,19 +43,17 @@ export function DayDetailPanel() {
 
         {/* Progress bar */}
         {todos.length > 0 && (
-          <div className="mt-3 h-0.5 bg-surface-3 rounded-full overflow-hidden">
+          <div className="mt-3 h-1 bg-surface-3 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-wine to-plum-light rounded-full transition-all duration-500"
+              className="h-full bg-accent rounded-full transition-all duration-500"
               style={{ width: `${(done / todos.length) * 100}%` }}
             />
           </div>
         )}
       </div>
 
-      <div className="h-px bg-border mx-5" />
-
-      {/* Todo list */}
-      <div className="px-3 pt-2 pb-1 max-h-64 overflow-y-auto">
+      {/* Todo list — scrollable */}
+      <div className="px-3 pt-2 pb-1 overflow-y-auto flex-1" style={{ maxHeight: '50dvh' }}>
         <TodoList
           todos={todos}
           onToggle={id => toggleTodo(isoDate, id)}
@@ -62,7 +62,7 @@ export function DayDetailPanel() {
       </div>
 
       {/* Add form */}
-      <div className="px-4 pb-4 pt-2">
+      <div className="px-4 pb-4 pt-2 border-t border-border flex-shrink-0 safe-bottom">
         <TodoForm onAdd={(label, color) => addTodo(isoDate, label, color)} />
       </div>
     </Modal>
