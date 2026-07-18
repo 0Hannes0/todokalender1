@@ -20,30 +20,23 @@ export function GoalsPanel() {
   const { state, goals: { getGoals, addGoal, toggleGoal, deleteGoal } } = useApp()
   const { currentDate, view } = state
 
-  // Default active tab mirrors current calendar view
   const defaultScope = SCOPES.find(s => s.view === view)?.key || 'monthly'
   const [activeScope, setActiveScope] = useState(defaultScope)
-
-  // Sync tab when view changes from outside
   const scopeKey = getKey(activeScope, currentDate)
-
   const goals = getGoals(activeScope, scopeKey)
 
   return (
-    <div className="p-4">
-      {/* Section label */}
-      <p className="text-xs font-medium text-charcoal-light uppercase tracking-wide mb-3">Ziele</p>
-
+    <div className="px-4">
       {/* Scope tabs */}
-      <div className="flex rounded-lg bg-cream p-0.5 gap-0.5 mb-4">
+      <div className="flex gap-0.5 mb-3 bg-surface-3 rounded-xl p-1">
         {SCOPES.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setActiveScope(key)}
-            className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
+            className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-all ${
               activeScope === key
-                ? 'bg-white text-charcoal shadow-sm'
-                : 'text-charcoal-light hover:text-charcoal'
+                ? 'bg-wine text-text shadow-sm'
+                : 'text-text-3 hover:text-text-2'
             }`}
           >
             {label}
@@ -51,14 +44,12 @@ export function GoalsPanel() {
         ))}
       </div>
 
-      {/* Goals list */}
       <GoalList
         goals={goals}
         onToggle={id => toggleGoal(activeScope, scopeKey, id)}
         onDelete={id => deleteGoal(activeScope, scopeKey, id)}
       />
 
-      {/* Add goal */}
       <GoalForm onAdd={label => addGoal(activeScope, scopeKey, label)} />
     </div>
   )

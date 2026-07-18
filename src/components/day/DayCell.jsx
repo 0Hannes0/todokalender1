@@ -8,41 +8,38 @@ export function DayCell({ date, currentMonth }) {
   const today = isToday(date)
   const inMonth = isSameMonth(date, currentMonth)
   const isSelected = state.selectedDay && toIsoDate(state.selectedDay) === isoDate
-
   const todos = getTodos(isoDate)
-  const dots = todos.slice(0, 3)
-  const overflow = todos.length - 3
-
-  function handleClick() {
-    dispatch({ type: 'SELECT_DAY', payload: date })
-  }
+  const dots = todos.slice(0, 4)
+  const overflow = todos.length - 4
 
   return (
     <button
-      onClick={handleClick}
+      onClick={() => dispatch({ type: 'SELECT_DAY', payload: date })}
       className={`
-        w-full aspect-square sm:aspect-auto sm:min-h-16 p-1.5 rounded-xl text-left transition-all
-        flex flex-col gap-0.5 group
-        hover:bg-cream-dark
-        focus:outline-none focus:ring-2 focus:ring-sage/40
-        ${!inMonth ? 'opacity-30' : ''}
-        ${isSelected ? 'bg-sage-light ring-2 ring-sage' : ''}
+        w-full min-h-20 p-2.5 rounded-xl text-left transition-all flex flex-col gap-1.5 group
+        focus:outline-none focus:ring-1 focus:ring-wine
+        ${!inMonth ? 'opacity-20' : ''}
+        ${isSelected
+          ? 'bg-wine/20 ring-1 ring-wine'
+          : 'hover:bg-surface-2'
+        }
       `}
       aria-label={`${isoDate}${todos.length ? `, ${todos.length} Aufgaben` : ''}`}
     >
       {/* Day number */}
-      <span
-        className={`
-          text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full self-start
-          ${today ? 'bg-sage text-white font-semibold' : 'text-charcoal group-hover:text-charcoal'}
-        `}
-      >
+      <span className={`
+        text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full self-start flex-shrink-0
+        ${today
+          ? 'bg-gradient-to-br from-wine-bright to-plum text-white font-semibold shadow-lg shadow-wine/30'
+          : isSelected ? 'text-accent' : 'text-text-2 group-hover:text-text'
+        }
+      `}>
         {date.getDate()}
       </span>
 
-      {/* Color dots */}
+      {/* Todo dots */}
       {dots.length > 0 && (
-        <div className="flex gap-1 px-0.5 flex-wrap">
+        <div className="flex gap-1 flex-wrap px-0.5">
           {dots.map(todo => (
             <span
               key={todo.id}
@@ -51,7 +48,7 @@ export function DayCell({ date, currentMonth }) {
             />
           ))}
           {overflow > 0 && (
-            <span className="text-[10px] text-charcoal-light leading-none self-center">+{overflow}</span>
+            <span className="text-[9px] text-text-muted self-center leading-none">+{overflow}</span>
           )}
         </div>
       )}

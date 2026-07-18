@@ -8,17 +8,17 @@ export function MonthView() {
   const cells = buildMonthGrid(currentDate)
 
   return (
-    <div className="p-4 h-full flex flex-col">
+    <div className="p-5 h-full flex flex-col">
       {/* Weekday header */}
-      <div className="grid grid-cols-7 mb-2">
+      <div className="grid grid-cols-7 mb-1">
         {WEEKDAY_LABELS.map(day => (
-          <div key={day} className="text-xs font-medium text-charcoal-light text-center py-2">
+          <div key={day} className="text-xs font-medium text-text-muted text-center py-2 uppercase tracking-widest">
             {day}
           </div>
         ))}
       </div>
 
-      {/* Day grid */}
+      {/* Grid */}
       <div className="grid grid-cols-7 flex-1 gap-1">
         {cells.map(date => (
           <DayCell

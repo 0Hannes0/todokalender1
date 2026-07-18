@@ -3,43 +3,65 @@
 @theme {
   --font-sans: 'Inter', sans-serif;
 
-  --color-cream: #F7F3EE;
-  --color-cream-dark: #EDE7DE;
-  --color-sage-light: #D4DFCF;
-  --color-sage: #A8B5A2;
-  --color-sage-dark: #6E7D68;
-  --color-rose-light: #E8D5D0;
-  --color-rose: #C9A9A6;
-  --color-rose-dark: #9E7570;
-  --color-charcoal: #3D3D3D;
-  --color-charcoal-light: #6B6B6B;
-  --color-muted: #B0B0B0;
+  /* Bordeaux + Lila Palette */
+  --color-bg:           #1a0f14;
+  --color-surface:      #231219;
+  --color-surface-2:    #2e1820;
+  --color-surface-3:    #3a1f28;
+  --color-border:       #4a2535;
+  --color-border-light: #5c3040;
 
-  --animate-slide-up: slide-up 0.2s ease-out;
+  --color-wine:         #7d1d3f;
+  --color-wine-light:   #9b2a50;
+  --color-wine-bright:  #c23b6a;
+  --color-plum:         #6b2d6b;
+  --color-plum-light:   #8b3d8b;
+  --color-accent:       #d4547a;
+  --color-accent-glow:  #e8789a;
+
+  --color-text:         #f0e6ec;
+  --color-text-2:       #c4a8b8;
+  --color-text-3:       #8a6878;
+  --color-text-muted:   #5a4050;
+
+  --animate-slide-up:   slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in:    fade-in 0.15s ease-out;
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
-* {
-  font-family: 'Inter', sans-serif;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-body {
-  background-color: #F7F3EE;
-  color: #3D3D3D;
+* { font-family: 'Inter', sans-serif; }
+
+html, body, #root {
+  height: 100%;
+  background-color: #1a0f14;
+  color: #f0e6ec;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #4a2535; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #7d1d3f; }
+
+/* Native color input reset */
+input[type="color"] {
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #D4DFCF;
-  border-radius: 2px;
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
 }

@@ -8,9 +8,9 @@ export function AppShell() {
   const { state } = useApp()
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-screen flex overflow-hidden bg-bg">
       {/* Sidebar */}
-      <div className="w-72 flex-shrink-0">
+      <div className="w-64 flex-shrink-0 border-r border-border">
         <Sidebar />
       </div>
 
@@ -22,7 +22,6 @@ export function AppShell() {
         </div>
       </div>
 
-      {/* Day detail overlay */}
       {state.selectedDay && <DayDetailPanel />}
     </div>
   )
