@@ -44,7 +44,7 @@ export function AppShell() {
   return (
     <>
       {/* ── Desktop/Tablet (md+) ── */}
-      <div className="hidden lg:flex h-screen overflow-hidden bg-bg">
+      <div className="hidden lg:flex h-dvh overflow-hidden bg-bg">
         <div className="w-72 flex-shrink-0">
           <LeftPanel />
         </div>
@@ -57,7 +57,7 @@ export function AppShell() {
       </div>
 
       {/* ── Mobile (< md) ── */}
-      <div className="flex lg:hidden flex-col h-screen overflow-hidden bg-bg">
+      <div className="flex lg:hidden flex-col h-dvh overflow-hidden bg-bg">
         {/* Safe-area top spacer */}
         <div className="safe-top bg-surface flex-shrink-0" />
 
