@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useApp } from '../../store/AppContext'
-import { toWeekKey, toMonthKey, toYearKey } from '../../utils/dateHelpers'
+import { toWeekKey, toMonthKey, toYearKey, toIsoDate } from '../../utils/dateHelpers'
 import { GoalList } from './GoalList'
 import { GoalForm } from './GoalForm'
 
 const SCOPES = [
+  { key: 'daily',   label: 'Tag'   },
   { key: 'weekly',  label: 'Woche' },
   { key: 'monthly', label: 'Monat' },
   { key: 'yearly',  label: 'Jahr'  },
 ]
 
 function getKey(scope, date) {
+  if (scope === 'daily')   return toIsoDate(date)
   if (scope === 'weekly')  return toWeekKey(date)
   if (scope === 'monthly') return toMonthKey(date)
   return toYearKey(date)
@@ -18,7 +20,7 @@ function getKey(scope, date) {
 
 export function GoalsPanel() {
   const { state, goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress } } = useApp()
-  const [activeScope, setActiveScope] = useState('monthly')
+  const [activeScope, setActiveScope] = useState('daily')
   const scopeKey = getKey(activeScope, state.currentDate)
   const goals = getGoals(activeScope, scopeKey)
 

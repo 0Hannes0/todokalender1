@@ -43,17 +43,17 @@ function uuid() { return crypto.randomUUID() }
 async function loadUserData(uid) {
   const { data, error } = await supabase
     .from('user_data')
-    .select('todos, goals')
+    .select('todos, goals, habits')
     .eq('user_id', uid)
     .single()
   if (error && error.code !== 'PGRST116') console.error('load error', error)
   return data || null
 }
 
-async function saveUserData(uid, todos, goals) {
+async function saveUserData(uid, todos, goals, habits) {
   const { error } = await supabase
     .from('user_data')
-    .upsert({ user_id: uid, todos, goals, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .upsert({ user_id: uid, todos, goals, habits, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
   if (error) console.error('save error', error)
 }
 
@@ -71,7 +71,8 @@ export function AppProvider({ children }) {
   const [uiState, dispatch] = useReducer(reducer, initialState)
 
   const [todos, setTodosRaw] = useState(() => lsGet('tk_todos', {}))
-  const [goals, setGoalsRaw] = useState(() => lsGet('tk_goals', { weekly: {}, monthly: {}, yearly: {} }))
+  const [goals, setGoalsRaw] = useState(() => lsGet('tk_goals', { daily: {}, weekly: {}, monthly: {}, yearly: {} }))
+  const [habits, setHabitsRaw] = useState(() => lsGet('tk_habits', {}))
   const [loaded, setLoaded] = useState(false)
 
   // Save timer ref for debounced remote writes
@@ -80,9 +81,9 @@ export function AppProvider({ children }) {
   // Load from Supabase when user logs in, clear when logs out
   useEffect(() => {
     if (!user) {
-      // Clear all data on logout
       setTodosRaw({})
-      setGoalsRaw({ weekly: {}, monthly: {}, yearly: {} })
+      setGoalsRaw({ daily: {}, weekly: {}, monthly: {}, yearly: {} })
+      setHabitsRaw({})
       dispatch({ type: 'CLOSE_DAY' })
       setLoaded(true)
       return
@@ -91,27 +92,29 @@ export function AppProvider({ children }) {
     loadUserData(user.id).then(data => {
       if (data) {
         setTodosRaw(data.todos || {})
-        setGoalsRaw(data.goals || { weekly: {}, monthly: {}, yearly: {} })
+        setGoalsRaw(data.goals || { daily: {}, weekly: {}, monthly: {}, yearly: {} })
+        setHabitsRaw(data.habits || {})
       }
       setLoaded(true)
     })
   }, [user?.id])
 
   // Debounced sync to Supabase (500ms after last change)
-  function persist(newTodos, newGoals) {
+  function persist(newTodos, newGoals, newHabits) {
     if (user) {
       clearTimeout(saveTimer.current)
-      saveTimer.current = setTimeout(() => saveUserData(user.id, newTodos, newGoals), 500)
+      saveTimer.current = setTimeout(() => saveUserData(user.id, newTodos, newGoals, newHabits), 500)
     } else {
       lsSet('tk_todos', newTodos)
       lsSet('tk_goals', newGoals)
+      lsSet('tk_habits', newHabits)
     }
   }
 
   function setTodos(updater) {
     setTodosRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      persist(next, goals)
+      persist(next, goals, habits)
       return next
     })
   }
@@ -119,7 +122,15 @@ export function AppProvider({ children }) {
   function setGoals(updater) {
     setGoalsRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      persist(todos, next)
+      persist(todos, next, habits)
+      return next
+    })
+  }
+
+  function setHabits(updater) {
+    setHabitsRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      persist(todos, goals, next)
       return next
     })
   }
@@ -175,7 +186,8 @@ export function AppProvider({ children }) {
     for (const [isoDate, dayTodos] of entries) {
       // Check if this date belongs to the scope
       let belongs = false
-      if (scope === 'monthly') belongs = isoDate.startsWith(scopeKey)
+      if (scope === 'daily')   belongs = isoDate === scopeKey
+      else if (scope === 'monthly') belongs = isoDate.startsWith(scopeKey)
       else if (scope === 'yearly') belongs = isoDate.startsWith(scopeKey)
       else if (scope === 'weekly') {
         belongs = toWeekKey(new Date(isoDate)) === scopeKey
@@ -204,12 +216,55 @@ export function AppProvider({ children }) {
     }))
   }
 
+  // Habit operations
+  // habits structure: { [monthKey]: { habitList: [{id, emoji, label}], log: { [habitId]: { [day]: bool } } } }
+  function getHabits(monthKey) {
+    return habits[monthKey]?.habitList || []
+  }
+  function getLog(monthKey, habitId) {
+    return habits[monthKey]?.log?.[habitId] || {}
+  }
+  function addHabit(monthKey, emoji, label) {
+    if (!user) { openLogin(); return }
+    const newHabit = { id: uuid(), emoji, label }
+    setHabits(prev => ({
+      ...prev,
+      [monthKey]: {
+        ...prev[monthKey],
+        habitList: [...(prev[monthKey]?.habitList || []), newHabit],
+        log: prev[monthKey]?.log || {},
+      },
+    }))
+  }
+  function deleteHabit(monthKey, habitId) {
+    if (!user) { openLogin(); return }
+    setHabits(prev => {
+      const m = prev[monthKey] || {}
+      const newLog = { ...m.log }
+      delete newLog[habitId]
+      return { ...prev, [monthKey]: { ...m, habitList: (m.habitList || []).filter(h => h.id !== habitId), log: newLog } }
+    })
+  }
+  function toggleDay(monthKey, habitId, day) {
+    if (!user) { openLogin(); return }
+    setHabits(prev => {
+      const m = prev[monthKey] || {}
+      const log = m.log || {}
+      const habitLog = log[habitId] || {}
+      return {
+        ...prev,
+        [monthKey]: { ...m, log: { ...log, [habitId]: { ...habitLog, [day]: !habitLog[day] } } },
+      }
+    })
+  }
+
   const value = {
     state: uiState,
     dispatch,
     loaded,
     todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo },
     goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress },
+    habits: { getHabits, addHabit, deleteHabit, toggleDay, getLog },
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

@@ -1,6 +1,7 @@
 import { useApp } from '../../store/AppContext'
 import { useAuth } from '../../store/AuthContext'
 import { useLoginGate } from '../../store/LoginGateContext'
+import { useTheme } from '../../store/ThemeContext'
 import { formatMonthYear, formatWeekRange, toYearKey } from '../../utils/dateHelpers'
 
 const VIEWS = [
@@ -13,6 +14,7 @@ export function CalendarHeader({ mobile = false }) {
   const { state, dispatch } = useApp()
   const { user, signOut } = useAuth()
   const { openLogin } = useLoginGate()
+  const { dark, toggle } = useTheme()
   const { view, currentDate } = state
 
   function label() {
@@ -66,6 +68,27 @@ export function CalendarHeader({ mobile = false }) {
           <button onClick={openLogin}
             className="text-[11px] font-medium text-accent border border-accent/30 rounded-lg px-2.5 py-1.5 hover:bg-accent-soft transition-all flex-shrink-0">
             Einloggen
+          </button>
+        )}
+
+        {/* Dark mode heart toggle (desktop only) */}
+        {!mobile && (
+          <button
+            onClick={toggle}
+            aria-label={dark ? 'Light Mode' : 'Dark Mode'}
+            className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0 ${dark ? 'bg-accent' : 'bg-surface-3'}`}
+          >
+            <span className={`absolute top-0.5 flex items-center justify-center w-5 h-5 rounded-full shadow transition-transform duration-300 ${dark ? 'translate-x-6 bg-surface' : 'translate-x-0.5 bg-white'}`}>
+              <svg width="12" height="11" viewBox="0 0 18 17" fill="none">
+                <path d="M9 15.5S1.5 10.5 1.5 5.5a4 4 0 0 1 7.5-1.9A4 4 0 0 1 16.5 5.5c0 5-7.5 10-7.5 10z"
+                  stroke={dark ? '#e05c8a' : '#8b1a4a'}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill={dark ? '#e05c8a' : 'transparent'}
+                />
+              </svg>
+            </span>
           </button>
         )}
       </div>
