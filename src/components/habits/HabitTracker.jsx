@@ -21,6 +21,9 @@ function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete }) {
   const daysInMonth = getDaysInMonth(currentDate)
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
+  const today = new Date()
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month
+  const todayDay = isCurrentMonth ? today.getDate() : null
 
   // Monday-first offset: getDay returns 0=Sun, convert to 0=Mon
   const firstDow = getDay(new Date(year, month, 1))
@@ -64,11 +67,11 @@ function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete }) {
                 onClick={() => onToggle(day)}
                 className="flex flex-col items-center gap-0 focus:outline-none active:scale-90 transition-transform"
               >
-                <span className="text-[8px] text-text-4 leading-none mb-0.5">{day}</span>
+                <span className={`text-[8px] leading-none mb-0.5 ${day === todayDay ? 'text-accent font-bold' : 'text-text-4'}`}>{day}</span>
                 <svg width="14" height="13" viewBox="0 0 18 17" fill="none">
                   <path d="M9 15.5S1.5 10.5 1.5 5.5a4 4 0 0 1 7.5-1.9A4 4 0 0 1 16.5 5.5c0 5-7.5 10-7.5 10z"
-                    stroke="#8b1a4a"
-                    strokeWidth="1.5"
+                    stroke={day === todayDay ? '#8b1a4a' : '#8b1a4a'}
+                    strokeWidth={day === todayDay ? '2' : '1.5'}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     fill={log[day] ? '#8b1a4a' : 'transparent'}
