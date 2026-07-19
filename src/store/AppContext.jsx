@@ -51,10 +51,17 @@ async function loadUserData(uid) {
 }
 
 async function saveUserData(uid, todos, goals, habits) {
+  // Try with habits first, fall back without if column doesn't exist yet
   const { error } = await supabase
     .from('user_data')
     .upsert({ user_id: uid, todos, goals, habits, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-  if (error) console.error('save error', error)
+  if (error) {
+    console.warn('save with habits failed, retrying without:', error.message)
+    const { error: error2 } = await supabase
+      .from('user_data')
+      .upsert({ user_id: uid, todos, goals, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    if (error2) console.error('save error:', error2)
+  }
 }
 
 // --- localStorage fallback (for when not logged in) ---
@@ -95,6 +102,10 @@ export function AppProvider({ children }) {
         setGoalsRaw(data.goals || { daily: {}, weekly: {}, monthly: {}, yearly: {} })
         setHabitsRaw(data.habits || {})
       }
+      // If data is null (no row yet), keep whatever is in state — don't wipe it
+      setLoaded(true)
+    }).catch(err => {
+      console.error('load failed, keeping existing data:', err)
       setLoaded(true)
     })
   }, [user?.id])
