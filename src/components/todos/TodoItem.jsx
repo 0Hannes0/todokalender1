@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SwipeToDelete } from '../ui/SwipeToDelete'
 
 export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
   const [editing, setEditing] = useState(false)
@@ -19,6 +20,7 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
   }
 
   return (
+    <SwipeToDelete onDelete={() => onDelete(todo.id)}>
     <div className={`rounded-xl transition-colors ${todo.completed ? 'opacity-50' : ''} ${editing ? 'bg-surface-2 ring-1 ring-accent-mid' : 'hover:bg-surface-2 active:bg-surface-2'}`}>
       <div className="flex items-center gap-2.5 px-2 py-2.5">
         {/* Checkbox */}
@@ -45,14 +47,6 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
         </button>
 
         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: todo.color }} />
-
-        {/* Delete */}
-        <button onClick={() => onDelete(todo.id)} aria-label="Löschen"
-          className="opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity text-text-4 hover:text-red-400 focus:opacity-100 focus:outline-none w-8 h-8 flex items-center justify-center flex-shrink-0">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M9 3L3 9M3 3l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        </button>
       </div>
 
         {/* Edit panel */}
@@ -96,5 +90,6 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
         </div>
       )}
     </div>
+    </SwipeToDelete>
   )
 }

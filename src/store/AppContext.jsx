@@ -99,7 +99,13 @@ export function AppProvider({ children }) {
     loadUserData(user.id).then(data => {
       if (data) {
         setTodosRaw(data.todos || {})
-        setGoalsRaw(data.goals || { daily: {}, weekly: {}, monthly: {}, yearly: {} })
+        const g = data.goals || {}
+        setGoalsRaw({
+          daily: g.daily || {},
+          weekly: g.weekly || {},
+          monthly: g.monthly || {},
+          yearly: g.yearly || {},
+        })
         setHabitsRaw(data.habits || {})
       }
       // If data is null (no row yet), keep whatever is in state — don't wipe it

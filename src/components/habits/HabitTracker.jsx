@@ -3,6 +3,7 @@ import { useApp } from '../../store/AppContext'
 import { toMonthKey } from '../../utils/dateHelpers'
 import { getDaysInMonth, getDay, format } from 'date-fns'
 import { de } from 'date-fns/locale'
+import { SwipeToDelete } from '../ui/SwipeToDelete'
 
 const PRESET_HABITS = [
   { emoji: '💧', label: 'Wasser' },
@@ -39,16 +40,12 @@ function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete }) {
   while (cells.length % 7 !== 0) cells.push(null)
 
   return (
-    <div className="bg-surface rounded-2xl px-3 pt-3 pb-3 group">
+      <div className="bg-surface rounded-2xl px-3 pt-3 pb-3">
       {/* Habit header */}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg leading-none">{habit.emoji}</span>
         <span className="text-[13px] font-medium text-text flex-1">{habit.label}</span>
         <span className="text-[11px] text-text-3">{doneCount}/{daysInMonth}</span>
-        <button onClick={() => onDelete(habit.id)}
-          className="opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity text-text-4 hover:text-red-400 focus:outline-none w-6 h-6 flex items-center justify-center">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M7.5 2.5l-5 5M2.5 2.5l5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-        </button>
       </div>
 
       {/* Weekday headers */}
@@ -162,8 +159,8 @@ export function HabitTracker() {
           </div>
         ) : (
           habits.map(habit => (
+            <SwipeToDelete key={habit.id} onDelete={() => onDelete(habit.id)}>
             <HabitGrid
-              key={habit.id}
               habit={habit}
               monthKey={monthKey}
               currentDate={currentDate}
@@ -171,6 +168,7 @@ export function HabitTracker() {
               onToggle={day => toggleDay(monthKey, habit.id, day)}
               onDelete={() => deleteHabit(monthKey, habit.id)}
             />
+            </SwipeToDelete>
           ))
         )}
       </div>
