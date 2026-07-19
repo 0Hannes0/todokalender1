@@ -151,7 +151,7 @@ export function HabitTracker() {
       )}
 
       {/* Habit list */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto px-3 py-3 pb-6 flex flex-col gap-3">
         {habits.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-text-4">
             <span className="text-4xl">🌱</span>
