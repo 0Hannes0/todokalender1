@@ -159,7 +159,7 @@ export function HabitTracker() {
           </div>
         ) : (
           habits.map(habit => (
-            <SwipeToDelete key={habit.id} onDelete={() => onDelete(habit.id)}>
+            <SwipeToDelete key={habit.id} onDelete={() => deleteHabit(monthKey, habit.id)}>
             <HabitGrid
               habit={habit}
               monthKey={monthKey}
