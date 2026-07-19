@@ -18,7 +18,10 @@ const PRESET_HABITS = [
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
-function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete }) {
+function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete, onUpdate }) {
+  const [editing, setEditing] = useState(false)
+  const [editEmoji, setEditEmoji] = useState(habit.emoji)
+  const [editLabel, setEditLabel] = useState(habit.label)
   const daysInMonth = getDaysInMonth(currentDate)
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -42,11 +45,28 @@ function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete }) {
   return (
       <div className="bg-surface rounded-2xl px-3 pt-3 pb-3">
       {/* Habit header */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg leading-none">{habit.emoji}</span>
-        <span className="text-[13px] font-medium text-text flex-1">{habit.label}</span>
-        <span className="text-[11px] text-text-3">{doneCount}/{daysInMonth}</span>
-      </div>
+      {editing ? (
+        <div className="flex items-center gap-2 mb-2">
+          <input value={editEmoji} onChange={e => setEditEmoji(e.target.value)} maxLength={2}
+            className="w-9 text-center bg-surface-2 border border-border rounded-lg py-1 text-[15px] focus:outline-none focus:border-accent-mid" />
+          <input autoFocus value={editLabel} onChange={e => setEditLabel(e.target.value)} maxLength={30}
+            className="flex-1 bg-surface-2 border border-border rounded-lg px-2 py-1 text-[13px] text-text focus:outline-none focus:border-accent-mid"
+            onKeyDown={e => { if (e.key === 'Enter') { onUpdate(editEmoji, editLabel); setEditing(false) } if (e.key === 'Escape') setEditing(false) }} />
+          <button onClick={() => { onUpdate(editEmoji, editLabel); setEditing(false) }}
+            className="text-[11px] text-white bg-accent px-2 py-1 rounded-lg">✓</button>
+          <button onClick={() => setEditing(false)}
+            className="text-[11px] text-text-3 px-2 py-1 rounded-lg hover:bg-surface-2">✕</button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 mb-2">
+          <button onClick={() => { setEditEmoji(habit.emoji); setEditLabel(habit.label); setEditing(true) }}
+            className="flex items-center gap-2 flex-1 min-w-0 text-left focus:outline-none">
+            <span className="text-lg leading-none">{habit.emoji}</span>
+            <span className="text-[13px] font-medium text-text truncate">{habit.label}</span>
+          </button>
+          <span className="text-[11px] text-text-3 flex-shrink-0">{doneCount}/{daysInMonth}</span>
+        </div>
+      )}
 
       {/* Weekday headers */}
       <div className="grid grid-cols-7 mb-1">
@@ -84,7 +104,7 @@ function HabitGrid({ habit, monthKey, currentDate, log, onToggle, onDelete }) {
 }
 
 export function HabitTracker() {
-  const { state, habits: { getHabits, addHabit, deleteHabit, toggleDay, getLog } } = useApp()
+  const { state, habits: { getHabits, addHabit, deleteHabit, updateHabit, toggleDay, getLog } } = useApp()
   const { currentDate } = state
   const monthKey = toMonthKey(currentDate)
   const monthLabel = format(currentDate, 'MMMM yyyy', { locale: de })
@@ -167,6 +187,7 @@ export function HabitTracker() {
               log={getLog(monthKey, habit.id)}
               onToggle={day => toggleDay(monthKey, habit.id, day)}
               onDelete={() => deleteHabit(monthKey, habit.id)}
+              onUpdate={(emoji, label) => updateHabit(monthKey, habit.id, emoji, label)}
             />
             </SwipeToDelete>
           ))

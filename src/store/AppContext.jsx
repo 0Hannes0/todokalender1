@@ -304,13 +304,24 @@ export function AppProvider({ children }) {
     })
   }
 
+  function updateHabit(monthKey, habitId, emoji, label) {
+    if (!user) { openLogin(); return }
+    setHabits(prev => {
+      const m = prev[monthKey] || {}
+      return {
+        ...prev,
+        [monthKey]: { ...m, habitList: (m.habitList || []).map(h => h.id === habitId ? { ...h, emoji, label } : h) },
+      }
+    })
+  }
+
   const value = {
     state: uiState,
     dispatch,
     loaded,
     todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo },
     goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress },
-    habits: { getHabits, addHabit, deleteHabit, toggleDay, getLog },
+    habits: { getHabits, addHabit, deleteHabit, updateHabit, toggleDay, getLog },
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
