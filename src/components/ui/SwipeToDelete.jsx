@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 
-const THRESHOLD = 72 // px to swipe before delete reveals
+const THRESHOLD = 72
 
 export function SwipeToDelete({ onDelete, children }) {
   const [offset, setOffset] = useState(0)
@@ -8,22 +8,23 @@ export function SwipeToDelete({ onDelete, children }) {
   const startX = useRef(null)
   const startY = useRef(null)
   const tracking = useRef(false)
+  const moved = useRef(false)
 
   function onTouchStart(e) {
     startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
     tracking.current = true
+    moved.current = false
   }
 
   function onTouchMove(e) {
     if (!tracking.current) return
     const dx = e.touches[0].clientX - startX.current
     const dy = Math.abs(e.touches[0].clientY - startY.current)
-    // Cancel if scrolling vertically
     if (dy > 10 && Math.abs(dx) < dy) { tracking.current = false; return }
-    if (dx > 0) { setOffset(0); return } // no right swipe
-    const clamped = Math.max(-THRESHOLD - 20, dx)
-    setOffset(clamped)
+    if (dx > 0) { setOffset(0); return }
+    moved.current = true
+    setOffset(Math.max(-THRESHOLD - 20, dx))
   }
 
   function onTouchEnd() {
@@ -43,22 +44,31 @@ export function SwipeToDelete({ onDelete, children }) {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
-      {/* Delete button behind */}
-      <div className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-500 rounded-xl"
-        style={{ width: THRESHOLD }}>
-        <button onClick={() => { close(); onDelete() }}
-          className="w-full h-full flex items-center justify-center focus:outline-none">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        </button>
-      </div>
+    <div className="relative" style={{ isolation: 'isolate' }}>
+      {/* Delete button — only visible when swiped */}
+      {swiped && (
+        <div
+          className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-500 rounded-xl z-0"
+          style={{ width: THRESHOLD }}
+        >
+          <button
+            onClick={() => { close(); onDelete() }}
+            className="w-full h-full flex items-center justify-center focus:outline-none"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Swipeable content */}
       <div
-        className="relative z-10 transition-transform"
-        style={{ transform: `translateX(${offset}px)`, transitionDuration: tracking.current ? '0ms' : '200ms' }}
+        className="relative z-10"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: tracking.current ? 'none' : 'transform 200ms ease',
+        }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
