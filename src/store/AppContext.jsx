@@ -64,12 +64,25 @@ async function saveUserData(uid, todos, goals, habits) {
   }
 }
 
-// --- localStorage fallback (for when not logged in) ---
+// --- localStorage fallback + backup cache ---
 function lsGet(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback } catch { return fallback }
 }
 function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+// Backup: saved after every successful Supabase load, used as safety net
+function backupSave(todos, goals, habits) {
+  lsSet('tk_backup_todos', todos)
+  lsSet('tk_backup_goals', goals)
+  lsSet('tk_backup_habits', habits)
+}
+function backupGet() {
+  return {
+    todos: lsGet('tk_backup_todos', null),
+    goals: lsGet('tk_backup_goals', null),
+    habits: lsGet('tk_backup_habits', null),
+  }
 }
 
 export function AppProvider({ children }) {
@@ -98,26 +111,42 @@ export function AppProvider({ children }) {
     setLoaded(false)
     loadUserData(user.id).then(data => {
       if (data) {
-        setTodosRaw(data.todos || {})
+        const todos = data.todos || {}
         const g = data.goals || {}
-        setGoalsRaw({
+        const goals = {
           daily: g.daily || {},
           weekly: g.weekly || {},
           monthly: g.monthly || {},
           yearly: g.yearly || {},
-        })
-        setHabitsRaw(data.habits || {})
+        }
+        const habits = data.habits || {}
+        setTodosRaw(todos)
+        setGoalsRaw(goals)
+        setHabitsRaw(habits)
+        // Save local backup after every successful load
+        backupSave(todos, goals, habits)
+      } else {
+        // No row in DB yet — try local backup to avoid data loss
+        const backup = backupGet()
+        if (backup.todos) setTodosRaw(backup.todos)
+        if (backup.goals) setGoalsRaw(backup.goals)
+        if (backup.habits) setHabitsRaw(backup.habits)
       }
-      // If data is null (no row yet), keep whatever is in state — don't wipe it
       setLoaded(true)
     }).catch(err => {
-      console.error('load failed, keeping existing data:', err)
+      console.error('load failed, using backup:', err)
+      const backup = backupGet()
+      if (backup.todos) setTodosRaw(backup.todos)
+      if (backup.goals) setGoalsRaw(backup.goals)
+      if (backup.habits) setHabitsRaw(backup.habits)
       setLoaded(true)
     })
   }, [user?.id])
 
   // Debounced sync to Supabase (500ms after last change)
   function persist(newTodos, newGoals, newHabits) {
+    // Always keep local backup in sync
+    backupSave(newTodos, newGoals, newHabits)
     if (user) {
       clearTimeout(saveTimer.current)
       saveTimer.current = setTimeout(() => saveUserData(user.id, newTodos, newGoals, newHabits), 500)
