@@ -1,11 +1,9 @@
-import { buildWeekRow, toIsoDate, toMonthKey, toWeekKey } from './dateHelpers'
-import { startOfISOWeek, endOfISOWeek, addDays } from 'date-fns'
+import { toIsoDate } from './dateHelpers'
 
 // --- Week days for a given weekKey ---
 
 /** Returns array of ISO date strings [Mon..Sun] for the given weekKey ('YYYY-Www') */
 export function getWeekDays(weekKey) {
-  // Parse weekKey back to a date — find the Monday
   const [yearStr, wStr] = weekKey.split('-W')
   const year = parseInt(yearStr, 10)
   const week = parseInt(wStr, 10)
@@ -23,37 +21,46 @@ export function getWeekDays(weekKey) {
 
 /**
  * Computes the star total and heart bonus for a single week.
+ * All 7 days are evaluated — not just days with entries.
+ * Days in the future are skipped (not penalised).
  *
- * @param {object} weekData  - The week entry from stars.weeks[weekKey]
- * @param {string[]} jokerDays - Array of ISO dates marked as Joker for this month
- * @param {string} weekKey   - 'YYYY-Www'
+ * @param {object} weekData    - The week entry from stars.weeks[weekKey]
+ * @param {string[]} jokerDays - ISO dates marked as Joker for this month
+ * @param {string} weekKey     - 'YYYY-Www'
  * @returns {{ stars: number, hearts: number }}
  */
-export function computeWeekStars(weekData, jokerDays = []) {
-  if (!weekData) return { stars: 0, hearts: 0 }
+export function computeWeekStars(weekData, jokerDays = [], weekKey) {
+  if (!weekData && !weekKey) return { stars: 0, hearts: 0 }
 
-  const days = weekData.days || {}
-  const training = weekData.training || {}
+  const days = (weekData && weekData.days) || {}
+  const training = (weekData && weekData.training) || {}
   const jokerSet = new Set(jokerDays)
+  const today = toIsoDate(new Date())
+
+  // Get all 7 days for the week
+  const allDays = weekKey ? getWeekDays(weekKey) : Object.keys(days)
 
   let base = 7
   let halfPenalty = 0
   let hearts = 0
 
-  // Derive week days from the first day key we can find, or use training session dates
-  // Build the 7 day keys from the week structure
-  const dayKeys = Object.keys(days)
+  for (const isoDate of allDays) {
+    // Future days → skip (not yet evaluated)
+    if (isoDate > today) continue
 
-  // For days that exist in the data
-  for (const isoDate of dayKeys) {
     // Joker → skip, no deduction
     if (jokerSet.has(isoDate)) continue
 
     const day = days[isoDate]
-    if (!day) continue
 
-    // Sick day (Fieber) → always excused
-    if (day.fieber) continue
+    // Sick day → always excused
+    if (day && day.fieber) continue
+
+    // No entry at all → full day fail
+    if (!day) {
+      base -= 1
+      continue
+    }
 
     let dayFail = false
 
@@ -68,12 +75,12 @@ export function computeWeekStars(weekData, jokerDays = []) {
     }
     if (schritte >= 15000) hearts += 1
 
-    // Wasser: only half-star if day wasn't already failing on other criteria
+    // Wasser: only half-star deduction if rest of day was OK
     if (!day.wasser) {
       if (!dayFail) {
         halfPenalty += 0.5
       }
-      // If dayFail is already true, water fail doesn't add extra
+      // If day already failing on other criteria, water doesn't add extra
     }
 
     if (dayFail) base -= 1
@@ -83,7 +90,6 @@ export function computeWeekStars(weekData, jokerDays = []) {
 
   // --- Training evaluation (weekly) ---
   const kraft = (training.kraft || []).filter(s => Number(s.minuten) >= 30)
-  const pilates = (training.pilates || []).filter(s => Number(s.minuten) >= 30)
   const jokerUsed = !!training.jokerUsed
   const ausnahme = !!training.ausnahme
 
@@ -91,10 +97,12 @@ export function computeWeekStars(weekData, jokerDays = []) {
     const allPilates = training.pilates || []
     const pilates45 = allPilates.filter(s => Number(s.minuten) >= 45).length
     const pilatesValid = allPilates.filter(s => Number(s.minuten) >= 30).length
+    // Need: 3× ≥45min AND total ≥5× ≥30min
     if (!(pilates45 >= 3 && pilatesValid >= 5)) {
       base -= 1
     }
   } else {
+    const pilates = (training.pilates || []).filter(s => Number(s.minuten) >= 30)
     const requiredKraft = jokerUsed ? 2 : 3
     const requiredPilates = jokerUsed ? 3 : 2
     const kraftOK = kraft.length >= requiredKraft

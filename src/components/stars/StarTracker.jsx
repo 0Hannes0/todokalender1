@@ -25,7 +25,7 @@ export function StarTracker() {
   const isLocked = weekData.lockedStars !== null && weekData.lockedStars !== undefined
 
   // Computed stars for the current week
-  const { stars: computedStars, hearts: computedHearts } = computeWeekStars(weekData, jokerDays)
+  const { stars: computedStars, hearts: computedHearts } = computeWeekStars(weekData, jokerDays, weekKey)
 
   // Can lock if not already locked (available anytime for past/current weeks)
   const today = toIsoDate(new Date())
