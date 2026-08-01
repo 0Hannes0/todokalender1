@@ -298,7 +298,7 @@ export function AppProvider({ children }) {
   }
 
   function getHabits(monthKey) {
-    if (habits[monthKey]?.habitList) return habits[monthKey].habitList
+    if (habits[monthKey]?.habitList?.length > 0) return habits[monthKey].habitList
     return findInheritedHabitList(habits, monthKey) || []
   }
   function getLog(monthKey, habitId) {
@@ -307,7 +307,7 @@ export function AppProvider({ children }) {
 
   // Ensures the given month has its own habitList copy (copy-on-write from inherited list)
   function ensureOwnHabitList(prev, monthKey) {
-    if (prev[monthKey]?.habitList) return prev
+    if (prev[monthKey]?.habitList?.length > 0) return prev
     const inherited = findInheritedHabitList(prev, monthKey) || []
     return {
       ...prev,
