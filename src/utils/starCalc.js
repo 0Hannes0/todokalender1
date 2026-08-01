@@ -89,27 +89,33 @@ export function computeWeekStars(weekData, jokerDays = [], weekKey) {
   base -= halfPenalty
 
   // --- Training evaluation (weekly) ---
-  const kraft = (training.kraft || []).filter(s => Number(s.minuten) >= 30)
-  const jokerUsed = !!training.jokerUsed
-  const ausnahme = !!training.ausnahme
+  // Only evaluate training if the week's Sunday has passed (week is complete)
+  const allDaysForWeek = weekKey ? getWeekDays(weekKey) : allDays
+  const sunday = allDaysForWeek[allDaysForWeek.length - 1]
+  const weekComplete = sunday <= today
 
-  if (ausnahme) {
-    const allPilates = training.pilates || []
-    const pilates45 = allPilates.filter(s => Number(s.minuten) >= 45).length
-    const pilatesValid = allPilates.filter(s => Number(s.minuten) >= 30).length
-    // Need: 3× ≥45min AND total ≥5× ≥30min
-    if (!(pilates45 >= 3 && pilatesValid >= 5)) {
-      base -= 1
+  if (weekComplete) {
+    const kraft = (training.kraft || []).filter(s => Number(s.minuten) >= 30)
+    const jokerUsed = !!training.jokerUsed
+    const ausnahme = !!training.ausnahme
+
+    if (ausnahme) {
+      const allPilates = training.pilates || []
+      const pilates45 = allPilates.filter(s => Number(s.minuten) >= 45).length
+      const pilatesValid = allPilates.filter(s => Number(s.minuten) >= 30).length
+      if (!(pilates45 >= 3 && pilatesValid >= 5)) {
+        base -= 1
+      }
+    } else {
+      const pilates = (training.pilates || []).filter(s => Number(s.minuten) >= 30)
+      const requiredKraft = jokerUsed ? 2 : 3
+      const requiredPilates = jokerUsed ? 3 : 2
+      const kraftOK = kraft.length >= requiredKraft
+      const pilatesOK = pilates.length >= requiredPilates
+      if (!kraftOK && !pilatesOK) base -= 2
+      else if (!kraftOK) base -= 1
+      else if (!pilatesOK) base -= 1
     }
-  } else {
-    const pilates = (training.pilates || []).filter(s => Number(s.minuten) >= 30)
-    const requiredKraft = jokerUsed ? 2 : 3
-    const requiredPilates = jokerUsed ? 3 : 2
-    const kraftOK = kraft.length >= requiredKraft
-    const pilatesOK = pilates.length >= requiredPilates
-    if (!kraftOK && !pilatesOK) base -= 2
-    else if (!kraftOK) base -= 1
-    else if (!pilatesOK) base -= 1
   }
 
   return { stars: Math.max(0, base), hearts }
