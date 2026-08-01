@@ -43,7 +43,7 @@ export function TrainingWeekPanel({ weekKey, weekDays = [], training = {}, isLoc
   const pilatesValid = pilates.filter(s => s.minuten >= 30).length
 
   return (
-    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+    <div className="rounded-2xl border border-border bg-surface">
       <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text">Training diese Woche</h3>
         {jokerUsed && (
