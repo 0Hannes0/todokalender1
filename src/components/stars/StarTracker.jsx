@@ -30,8 +30,9 @@ export function StarTracker() {
   // Can lock if not already locked (available anytime for past/current weeks)
   const today = toIsoDate(new Date())
   const weekSunday = weekDays[6]
-  const isPastOrCurrentWeek = weekSunday <= today
-  const canLock = !isLocked && isPastOrCurrentWeek
+  const isSunday = new Date().getDay() === 0
+  const isPastWeek = weekSunday < today
+  const canLock = !isLocked && (isPastWeek || (weekSunday === today && isSunday))
 
   function handleLock() {
     const confirmed = window.confirm(
@@ -105,6 +106,7 @@ export function StarTracker() {
         isLocked={isLocked}
         onLock={handleLock}
         canLock={canLock}
+        isFutureOrCurrent={!isLocked && !isPastWeek}
       />
 
       {/* Scrollable content */}

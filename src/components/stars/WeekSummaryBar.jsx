@@ -10,7 +10,7 @@ import { StarDisplayRow } from './StarDisplayRow'
  *   onLock   {function} - called when "Woche abschließen" is clicked
  *   isSunday {boolean}  - show lock button only if Sunday or past week
  */
-export function WeekSummaryBar({ stars = 0, hearts = 0, isLocked, onLock, canLock }) {
+export function WeekSummaryBar({ stars = 0, hearts = 0, isLocked, onLock, canLock, isFutureOrCurrent }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-accent/10 border-b border-accent/20 flex-wrap">
       <StarDisplayRow stars={stars} max={7} size={20} className="text-accent" />
@@ -30,6 +30,8 @@ export function WeekSummaryBar({ stars = 0, hearts = 0, isLocked, onLock, canLoc
           >
             Woche abschließen
           </button>
+        ) : isFutureOrCurrent ? (
+          <span className="text-xs text-text-3">Abrechnung am Sonntag</span>
         ) : null}
       </div>
     </div>
