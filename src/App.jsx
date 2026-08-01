@@ -3,6 +3,7 @@ import { LoginGateProvider } from './store/LoginGateContext'
 import { AppProvider } from './store/AppContext'
 import { ThemeProvider } from './store/ThemeContext'
 import { AppShell } from './components/layout/AppShell'
+import { HeartBurstOverlay } from './components/goals/HeartBurstOverlay'
 
 function Inner() {
   const { user } = useAuth()
@@ -29,6 +30,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <Inner />
+        <HeartBurstOverlay />
       </AuthProvider>
     </ThemeProvider>
   )

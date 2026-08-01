@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 
 const THRESHOLD = 72
 
-export function SwipeToDelete({ onDelete, children }) {
+export function SwipeToDelete({ onDelete, children, disabled }) {
   const [offset, setOffset] = useState(0)
   const [swiped, setSwiped] = useState(false)
   const startX = useRef(null)
@@ -11,6 +11,7 @@ export function SwipeToDelete({ onDelete, children }) {
   const moved = useRef(false)
 
   function onTouchStart(e) {
+    if (disabled) return
     startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
     tracking.current = true

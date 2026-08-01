@@ -39,7 +39,8 @@ export function GoalsPanel() {
       <GoalList goals={goals}
         onToggle={id => toggleGoal(activeScope, scopeKey, id)}
         onDelete={id => deleteGoal(activeScope, scopeKey, id)}
-        getProgress={g => getGoalProgress(activeScope, scopeKey, g)} />
+        getProgress={g => getGoalProgress(activeScope, scopeKey, g)}
+        scope={activeScope} />
       <GoalForm onAdd={(label, targetCount, keyword) => addGoal(activeScope, scopeKey, label, targetCount, keyword)} />
     </div>
   )

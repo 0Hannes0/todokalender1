@@ -6,10 +6,25 @@ import { TodoList } from '../todos/TodoList'
 import { TodoForm } from '../todos/TodoForm'
 import { MiniCalendar } from '../calendar/MiniCalendar'
 import { GoalsPanel } from '../goals/GoalsPanel'
+import { useState, useEffect } from 'react'
+import { registerPushNotifications, isPushEnabled } from '../../lib/pushNotifications'
 
 export function LeftPanel({ mobileSection }) {
   const { state, todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo } } = useApp()
   const { selectedDay } = state
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
+
+  useEffect(() => {
+    isPushEnabled().then(setPushEnabled)
+  }, [])
+
+  async function handleEnablePush() {
+    setPushLoading(true)
+    const ok = await registerPushNotifications()
+    setPushEnabled(ok)
+    setPushLoading(false)
+  }
 
   const today = new Date()
   const activeDay = selectedDay || today
@@ -24,8 +39,23 @@ export function LeftPanel({ mobileSection }) {
   if (mobileSection === 'goals') {
     return (
       <div className="absolute inset-0 bg-bg flex flex-col overflow-y-auto">
-        <div className="px-5 pt-6 pb-2 flex-shrink-0">
+        <div className="px-5 pt-6 pb-2 flex-shrink-0 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text">Ziele</h2>
+          {!pushEnabled && (
+            <button onClick={handleEnablePush} disabled={pushLoading}
+              className="flex items-center gap-1.5 text-[11px] text-text-3 bg-surface-2 px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {pushLoading ? '…' : 'Reminder'}
+            </button>
+          )}
+          {pushEnabled && (
+            <span className="text-[11px] text-accent flex items-center gap-1">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Reminder aktiv
+            </span>
+          )}
         </div>
         <GoalsPanel />
       </div>

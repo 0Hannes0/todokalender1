@@ -43,24 +43,30 @@ function uuid() { return crypto.randomUUID() }
 async function loadUserData(uid) {
   const { data, error } = await supabase
     .from('user_data')
-    .select('todos, goals, habits')
+    .select('todos, goals, habits, stars')
     .eq('user_id', uid)
     .single()
   if (error && error.code !== 'PGRST116') console.error('load error', error)
   return data || null
 }
 
-async function saveUserData(uid, todos, goals, habits) {
-  // Try with habits first, fall back without if column doesn't exist yet
+async function saveUserData(uid, todos, goals, habits, stars) {
+  // Try with stars first, fall back progressively if columns don't exist yet
   const { error } = await supabase
     .from('user_data')
-    .upsert({ user_id: uid, todos, goals, habits, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .upsert({ user_id: uid, todos, goals, habits, stars, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
   if (error) {
-    console.warn('save with habits failed, retrying without:', error.message)
+    console.warn('save with stars failed, retrying without:', error.message)
     const { error: error2 } = await supabase
       .from('user_data')
-      .upsert({ user_id: uid, todos, goals, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-    if (error2) console.error('save error:', error2)
+      .upsert({ user_id: uid, todos, goals, habits, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    if (error2) {
+      console.warn('save with habits failed, retrying without:', error2.message)
+      const { error: error3 } = await supabase
+        .from('user_data')
+        .upsert({ user_id: uid, todos, goals, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      if (error3) console.error('save error:', error3)
+    }
   }
 }
 
@@ -72,16 +78,18 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 // Backup: saved after every successful Supabase load, used as safety net
-function backupSave(todos, goals, habits) {
+function backupSave(todos, goals, habits, stars) {
   lsSet('tk_backup_todos', todos)
   lsSet('tk_backup_goals', goals)
   lsSet('tk_backup_habits', habits)
+  lsSet('tk_backup_stars', stars)
 }
 function backupGet() {
   return {
     todos: lsGet('tk_backup_todos', null),
     goals: lsGet('tk_backup_goals', null),
     habits: lsGet('tk_backup_habits', null),
+    stars: lsGet('tk_backup_stars', null),
   }
 }
 
@@ -93,6 +101,7 @@ export function AppProvider({ children }) {
   const [todos, setTodosRaw] = useState(() => lsGet('tk_todos', {}))
   const [goals, setGoalsRaw] = useState(() => lsGet('tk_goals', { daily: {}, weekly: {}, monthly: {}, yearly: {} }))
   const [habits, setHabitsRaw] = useState(() => lsGet('tk_habits', {}))
+  const [stars, setStarsRaw] = useState(() => lsGet('tk_stars', {}))
   const [loaded, setLoaded] = useState(false)
 
   // Save timer ref for debounced remote writes
@@ -104,6 +113,7 @@ export function AppProvider({ children }) {
       setTodosRaw({})
       setGoalsRaw({ daily: {}, weekly: {}, monthly: {}, yearly: {} })
       setHabitsRaw({})
+      setStarsRaw({})
       dispatch({ type: 'CLOSE_DAY' })
       setLoaded(true)
       return
@@ -120,17 +130,20 @@ export function AppProvider({ children }) {
           yearly: g.yearly || {},
         }
         const habits = data.habits || {}
+        const stars = data.stars || {}
         setTodosRaw(todos)
         setGoalsRaw(goals)
         setHabitsRaw(habits)
+        setStarsRaw(stars)
         // Save local backup after every successful load
-        backupSave(todos, goals, habits)
+        backupSave(todos, goals, habits, stars)
       } else {
         // No row in DB yet — try local backup to avoid data loss
         const backup = backupGet()
         if (backup.todos) setTodosRaw(backup.todos)
         if (backup.goals) setGoalsRaw(backup.goals)
         if (backup.habits) setHabitsRaw(backup.habits)
+        if (backup.stars) setStarsRaw(backup.stars)
       }
       setLoaded(true)
     }).catch(err => {
@@ -139,28 +152,30 @@ export function AppProvider({ children }) {
       if (backup.todos) setTodosRaw(backup.todos)
       if (backup.goals) setGoalsRaw(backup.goals)
       if (backup.habits) setHabitsRaw(backup.habits)
+      if (backup.stars) setStarsRaw(backup.stars)
       setLoaded(true)
     })
   }, [user?.id])
 
   // Debounced sync to Supabase (500ms after last change)
-  function persist(newTodos, newGoals, newHabits) {
+  function persist(newTodos, newGoals, newHabits, newStars) {
     // Always keep local backup in sync
-    backupSave(newTodos, newGoals, newHabits)
+    backupSave(newTodos, newGoals, newHabits, newStars)
     if (user) {
       clearTimeout(saveTimer.current)
-      saveTimer.current = setTimeout(() => saveUserData(user.id, newTodos, newGoals, newHabits), 500)
+      saveTimer.current = setTimeout(() => saveUserData(user.id, newTodos, newGoals, newHabits, newStars), 500)
     } else {
       lsSet('tk_todos', newTodos)
       lsSet('tk_goals', newGoals)
       lsSet('tk_habits', newHabits)
+      lsSet('tk_stars', newStars)
     }
   }
 
   function setTodos(updater) {
     setTodosRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      persist(next, goals, habits)
+      persist(next, goals, habits, stars)
       return next
     })
   }
@@ -168,7 +183,7 @@ export function AppProvider({ children }) {
   function setGoals(updater) {
     setGoalsRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      persist(todos, next, habits)
+      persist(todos, next, habits, stars)
       return next
     })
   }
@@ -176,7 +191,15 @@ export function AppProvider({ children }) {
   function setHabits(updater) {
     setHabitsRaw(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      persist(todos, goals, next)
+      persist(todos, goals, next, stars)
+      return next
+    })
+  }
+
+  function setStars(updater) {
+    setStarsRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      persist(todos, goals, habits, next)
       return next
     })
   }
@@ -356,6 +379,141 @@ export function AppProvider({ children }) {
     })
   }
 
+  // --- Stars operations ---
+  // stars structure: {
+  //   weeks: { [weekKey]: { days: { [isoDate]: { kalorien, eiweiss, schritte, wasser, fieber } },
+  //                         training: { kraft: [{date, minuten}], pilates: [{date, minuten}], jokerUsed, ausnahme },
+  //                         lockedStars: null | number, lockedHearts: null | number } },
+  //   months: { [monthKey]: { jokerDays: [isoDate], gesamtSterne: number, gesamtHerzen: number } }
+  // }
+
+  function getWeekStars(weekKey) {
+    return stars.weeks?.[weekKey] || null
+  }
+
+  function getMonthStars(monthKey) {
+    return stars.months?.[monthKey] || null
+  }
+
+  function setDayField(weekKey, isoDate, field, value) {
+    if (!user) { openLogin(); return }
+    setStars(prev => {
+      const weeks = prev.weeks || {}
+      const week = weeks[weekKey] || { days: {}, training: { kraft: [], pilates: [], jokerUsed: false, ausnahme: false }, lockedStars: null, lockedHearts: null }
+      if (week.lockedStars !== null && week.lockedStars !== undefined) return prev // locked
+      const day = week.days?.[isoDate] || {}
+      return {
+        ...prev,
+        weeks: {
+          ...weeks,
+          [weekKey]: {
+            ...week,
+            days: { ...week.days, [isoDate]: { ...day, [field]: value } },
+          },
+        },
+      }
+    })
+  }
+
+  function addTrainingSession(weekKey, type, date, minuten) {
+    if (!user) { openLogin(); return }
+    setStars(prev => {
+      const weeks = prev.weeks || {}
+      const week = weeks[weekKey] || { days: {}, training: { kraft: [], pilates: [], jokerUsed: false, ausnahme: false }, lockedStars: null, lockedHearts: null }
+      if (week.lockedStars !== null && week.lockedStars !== undefined) return prev
+      const training = week.training || {}
+      const sessions = [...(training[type] || []), { date, minuten: Number(minuten) }]
+      return {
+        ...prev,
+        weeks: {
+          ...weeks,
+          [weekKey]: { ...week, training: { ...training, [type]: sessions } },
+        },
+      }
+    })
+  }
+
+  function removeTrainingSession(weekKey, type, index) {
+    if (!user) { openLogin(); return }
+    setStars(prev => {
+      const weeks = prev.weeks || {}
+      const week = weeks[weekKey]
+      if (!week || (week.lockedStars !== null && week.lockedStars !== undefined)) return prev
+      const training = week.training || {}
+      const sessions = (training[type] || []).filter((_, i) => i !== index)
+      return {
+        ...prev,
+        weeks: {
+          ...weeks,
+          [weekKey]: { ...week, training: { ...training, [type]: sessions } },
+        },
+      }
+    })
+  }
+
+  function setWeekTrainingFlag(weekKey, flag, value) {
+    if (!user) { openLogin(); return }
+    setStars(prev => {
+      const weeks = prev.weeks || {}
+      const week = weeks[weekKey] || { days: {}, training: { kraft: [], pilates: [], jokerUsed: false, ausnahme: false }, lockedStars: null, lockedHearts: null }
+      if (week.lockedStars !== null && week.lockedStars !== undefined) return prev
+      const training = week.training || {}
+      return {
+        ...prev,
+        weeks: {
+          ...weeks,
+          [weekKey]: { ...week, training: { ...training, [flag]: value } },
+        },
+      }
+    })
+  }
+
+  function lockWeek(weekKey, lockedStars, lockedHearts, monthKey) {
+    if (!user) { openLogin(); return }
+    setStars(prev => {
+      const weeks = prev.weeks || {}
+      const week = weeks[weekKey]
+      if (!week) return prev
+      const months = prev.months || {}
+      const month = months[monthKey] || { jokerDays: [], gesamtSterne: 0, gesamtHerzen: 0 }
+      // Subtract old locked values if re-locking (shouldn't happen but defensive)
+      const prevLocked = week.lockedStars ?? 0
+      const prevHearts = week.lockedHearts ?? 0
+      return {
+        ...prev,
+        weeks: { ...weeks, [weekKey]: { ...week, lockedStars, lockedHearts } },
+        months: {
+          ...months,
+          [monthKey]: {
+            ...month,
+            gesamtSterne: (month.gesamtSterne || 0) - prevLocked + lockedStars,
+            gesamtHerzen: (month.gesamtHerzen || 0) - prevHearts + lockedHearts,
+          },
+        },
+      }
+    })
+  }
+
+  function setJokerDay(monthKey, isoDate, active) {
+    if (!user) { openLogin(); return }
+    setStars(prev => {
+      const months = prev.months || {}
+      const month = months[monthKey] || { jokerDays: [], gesamtSterne: 0, gesamtHerzen: 0 }
+      let jokerDays = month.jokerDays || []
+      if (active) {
+        if (jokerDays.length >= 3) return prev // max 3 Joker per month
+        if (!jokerDays.includes(isoDate)) jokerDays = [...jokerDays, isoDate]
+      } else {
+        jokerDays = jokerDays.filter(d => d !== isoDate)
+      }
+      return { ...prev, months: { ...months, [monthKey]: { ...month, jokerDays } } }
+    })
+  }
+
+  function setKrankDay(weekKey, isoDate, active) {
+    setDayField(weekKey, isoDate, 'fieber', active)
+  }
+
   const value = {
     state: uiState,
     dispatch,
@@ -363,6 +521,11 @@ export function AppProvider({ children }) {
     todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo },
     goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress },
     habits: { getHabits, addHabit, deleteHabit, updateHabit, toggleDay, getLog, reorderHabits },
+    stars: {
+      getWeekStars, getMonthStars, setDayField,
+      addTrainingSession, removeTrainingSession, setWeekTrainingFlag,
+      lockWeek, setJokerDay, setKrankDay,
+    },
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

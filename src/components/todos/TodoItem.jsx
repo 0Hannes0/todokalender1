@@ -70,12 +70,11 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
           </div>
           <textarea
             value={editNotes}
-            onChange={e => setEditNotes(e.target.value)}
+            onChange={e => { setEditNotes(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
             onKeyDown={handleKeyDown}
             placeholder="Notiz (optional)"
-            rows={2}
-            className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] text-text placeholder-text-4 focus:outline-none focus:border-accent-mid resize-none"
-            maxLength={500}
+            rows={3}
+            className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] text-text placeholder-text-4 focus:outline-none focus:border-accent-mid resize-none overflow-hidden"
           />
           <div className="flex gap-2 justify-end">
             <button onClick={() => { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color) }}

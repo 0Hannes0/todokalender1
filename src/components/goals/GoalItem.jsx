@@ -1,13 +1,31 @@
+import { useRef } from 'react'
 import { SwipeToDelete } from '../ui/SwipeToDelete'
 
-export function GoalItem({ goal, onToggle, onDelete, progress }) {
+function fireHeartBurst(scope) {
+  window.dispatchEvent(new CustomEvent('goal-completed', { detail: { scope } }))
+}
+
+export function GoalItem({ goal, onToggle, onDelete, progress, scope }) {
   const isCounter = goal.targetCount != null
   const pct = isCounter ? Math.min(100, Math.round((progress / goal.targetCount) * 100)) : null
+  const prevPct = useRef(pct)
+
+  function handleToggle() {
+    if (!goal.completed) fireHeartBurst(scope)
+    onToggle(goal.id)
+  }
+
+  // Counter goal just hit 100%
+  if (isCounter && pct >= 100 && prevPct.current < 100) {
+    prevPct.current = pct
+    setTimeout(() => fireHeartBurst(scope), 0)
+  } else if (isCounter) {
+    prevPct.current = pct
+  }
 
   return (
     <SwipeToDelete onDelete={() => onDelete(goal.id)}>
-    <div className={`flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-2 active:bg-surface-2 transition-colors ${!isCounter && goal.completed ? 'opacity-50' : ''}`}>
-      {/* Checkbox (only for non-counter goals) */}
+    <div className={`relative flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-2 active:bg-surface-2 transition-colors ${!isCounter && goal.completed ? 'opacity-50' : ''}`}>
       {isCounter ? (
         <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 -ml-1.5">
           <svg width="18" height="17" viewBox="0 0 18 17" fill="none">
@@ -17,7 +35,7 @@ export function GoalItem({ goal, onToggle, onDelete, progress }) {
           </svg>
         </div>
       ) : (
-        <button onClick={() => onToggle(goal.id)}
+        <button onClick={handleToggle}
           className="w-8 h-8 flex items-center justify-center flex-shrink-0 -ml-1.5 focus:outline-none">
           <svg width="18" height="17" viewBox="0 0 18 17" fill="none">
             <path d="M9 15.5S1.5 10.5 1.5 5.5a4 4 0 0 1 7.5-1.9A4 4 0 0 1 16.5 5.5c0 5-7.5 10-7.5 10z"

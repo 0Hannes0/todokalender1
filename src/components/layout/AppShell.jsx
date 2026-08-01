@@ -4,8 +4,10 @@ import { CalendarGrid } from '../calendar/CalendarGrid'
 import { LeftPanel } from './LeftPanel'
 import { DayDetailPanel } from '../day/DayDetailPanel'
 import { HabitTracker } from '../habits/HabitTracker'
+import { StarTracker } from '../stars/StarTracker'
 import { useApp } from '../../store/AppContext'
 import { useTheme } from '../../store/ThemeContext'
+import { useStreak } from '../../hooks/useStreak'
 
 const TABS = [
   {
@@ -46,6 +48,16 @@ const TABS = [
       </svg>
     ),
   },
+  {
+    key: 'stars',
+    label: 'Sterne',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 2l2.09 6.26H19l-5.18 3.76 1.97 6.08L11 14.27l-4.79 3.83 1.97-6.08L3 8.26h5.91L11 2z"
+          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
 ]
 
 function HeartToggle() {
@@ -74,6 +86,7 @@ function HeartToggle() {
 export function AppShell() {
   const { state } = useApp()
   const [mobileTab, setMobileTab] = useState('calendar')
+  const { streak, isNew } = useStreak()
 
   return (
     <>
@@ -119,6 +132,11 @@ export function AppShell() {
           <div className={`absolute inset-0 bg-bg transition-opacity duration-200 ${mobileTab === 'habits' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
             <HabitTracker />
           </div>
+
+          {/* Stars tab */}
+          <div className={`absolute inset-0 bg-bg transition-opacity duration-200 ${mobileTab === 'stars' ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+            <StarTracker />
+          </div>
         </div>
 
         {/* Bottom tab bar */}
@@ -139,7 +157,20 @@ export function AppShell() {
                 </button>
               )
             })}
-            {/* Dark mode toggle in tab bar */}
+
+            {/* Streak */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5">
+              <div className={`relative transition-transform duration-300 ${isNew ? 'scale-125' : 'scale-100'}`}>
+                <span className="text-[22px] leading-none">🔥</span>
+                <span className={`absolute -bottom-1 -right-2.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold px-1
+                  ${isNew ? 'bg-accent text-white' : 'bg-surface-3 text-text-2'}`}>
+                  {streak}
+                </span>
+              </div>
+              <span className="text-[10px] font-medium text-text-3">Streak</span>
+            </div>
+
+            {/* Dark mode */}
             <div className="px-3 flex items-center">
               <HeartToggle />
             </div>
