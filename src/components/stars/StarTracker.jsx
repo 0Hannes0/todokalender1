@@ -62,7 +62,7 @@ export function StarTracker() {
   // We'll pass weekData for the current week + any cached data
 
   return (
-    <div className="absolute inset-0 bg-bg flex flex-col">
+    <div className="absolute inset-0 bg-bg flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 px-4 pt-5 pb-3 bg-surface border-b border-border">
         <div className="flex items-center justify-between">
@@ -110,7 +110,7 @@ export function StarTracker() {
       />
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 pb-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-3 pb-8">
         {/* Daily entry cards */}
         <WeeklyView
           weekDays={weekDays}

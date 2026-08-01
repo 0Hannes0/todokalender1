@@ -12,7 +12,7 @@ import { StarDisplayRow } from './StarDisplayRow'
  */
 export function WeekSummaryBar({ stars = 0, hearts = 0, isLocked, onLock, canLock, isFutureOrCurrent }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-accent/10 border-b border-accent/20 flex-wrap">
+    <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-accent/10 border-b border-accent/20 flex-wrap">
       <StarDisplayRow stars={stars} max={7} size={20} className="text-accent" />
       <span className="text-accent font-semibold text-sm tabular-nums">
         {stars % 1 === 0 ? stars : stars.toFixed(1)} / 7
