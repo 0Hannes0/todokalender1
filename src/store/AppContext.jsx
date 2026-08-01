@@ -264,31 +264,59 @@ export function AppProvider({ children }) {
 
   // Habit operations
   // habits structure: { [monthKey]: { habitList: [{id, emoji, label}], log: { [habitId]: { [day]: bool } } } }
+
+  // Returns the most recent monthKey before `monthKey` that has a habitList
+  function findInheritedHabitList(habitsMap, monthKey) {
+    const keys = Object.keys(habitsMap)
+      .filter(k => k < monthKey && (habitsMap[k]?.habitList?.length ?? 0) > 0)
+      .sort()
+    if (keys.length === 0) return null
+    return habitsMap[keys[keys.length - 1]].habitList
+  }
+
   function getHabits(monthKey) {
-    return habits[monthKey]?.habitList || []
+    if (habits[monthKey]?.habitList) return habits[monthKey].habitList
+    return findInheritedHabitList(habits, monthKey) || []
   }
   function getLog(monthKey, habitId) {
     return habits[monthKey]?.log?.[habitId] || {}
   }
+
+  // Ensures the given month has its own habitList copy (copy-on-write from inherited list)
+  function ensureOwnHabitList(prev, monthKey) {
+    if (prev[monthKey]?.habitList) return prev
+    const inherited = findInheritedHabitList(prev, monthKey) || []
+    return {
+      ...prev,
+      [monthKey]: {
+        habitList: inherited.map(h => ({ ...h })),
+        log: prev[monthKey]?.log || {},
+      },
+    }
+  }
+
   function addHabit(monthKey, emoji, label) {
     if (!user) { openLogin(); return }
     const newHabit = { id: uuid(), emoji, label }
-    setHabits(prev => ({
-      ...prev,
-      [monthKey]: {
-        ...prev[monthKey],
-        habitList: [...(prev[monthKey]?.habitList || []), newHabit],
-        log: prev[monthKey]?.log || {},
-      },
-    }))
+    setHabits(prev => {
+      const base = ensureOwnHabitList(prev, monthKey)
+      return {
+        ...base,
+        [monthKey]: {
+          ...base[monthKey],
+          habitList: [...base[monthKey].habitList, newHabit],
+        },
+      }
+    })
   }
   function deleteHabit(monthKey, habitId) {
     if (!user) { openLogin(); return }
     setHabits(prev => {
-      const m = prev[monthKey] || {}
+      const base = ensureOwnHabitList(prev, monthKey)
+      const m = base[monthKey]
       const newLog = { ...m.log }
       delete newLog[habitId]
-      return { ...prev, [monthKey]: { ...m, habitList: (m.habitList || []).filter(h => h.id !== habitId), log: newLog } }
+      return { ...base, [monthKey]: { ...m, habitList: m.habitList.filter(h => h.id !== habitId), log: newLog } }
     })
   }
   function toggleDay(monthKey, habitId, day) {
@@ -307,11 +335,24 @@ export function AppProvider({ children }) {
   function updateHabit(monthKey, habitId, emoji, label) {
     if (!user) { openLogin(); return }
     setHabits(prev => {
-      const m = prev[monthKey] || {}
+      const base = ensureOwnHabitList(prev, monthKey)
+      const m = base[monthKey]
       return {
-        ...prev,
-        [monthKey]: { ...m, habitList: (m.habitList || []).map(h => h.id === habitId ? { ...h, emoji, label } : h) },
+        ...base,
+        [monthKey]: { ...m, habitList: m.habitList.map(h => h.id === habitId ? { ...h, emoji, label } : h) },
       }
+    })
+  }
+
+  function reorderHabits(monthKey, fromIndex, toIndex) {
+    if (!user) { openLogin(); return }
+    setHabits(prev => {
+      const base = ensureOwnHabitList(prev, monthKey)
+      const m = base[monthKey]
+      const list = [...m.habitList]
+      const [moved] = list.splice(fromIndex, 1)
+      list.splice(toIndex, 0, moved)
+      return { ...base, [monthKey]: { ...m, habitList: list } }
     })
   }
 
@@ -321,7 +362,7 @@ export function AppProvider({ children }) {
     loaded,
     todos: { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo },
     goals: { getGoals, addGoal, toggleGoal, deleteGoal, getGoalProgress },
-    habits: { getHabits, addHabit, deleteHabit, updateHabit, toggleDay, getLog },
+    habits: { getHabits, addHabit, deleteHabit, updateHabit, toggleDay, getLog, reorderHabits },
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
