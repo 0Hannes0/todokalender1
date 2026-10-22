@@ -100,10 +100,10 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
             <button
               type="button"
               onClick={() => setEditReminderEnabled(v => !v)}
-              className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${editReminderEnabled ? 'bg-accent' : 'bg-surface-3'}`}
+              className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${editReminderEnabled ? 'bg-accent' : 'bg-surface-3'}`}
               aria-label="Erinnerung aktivieren"
             >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${editReminderEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${editReminderEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
             </button>
             <span className="text-[12px] text-text-3 flex-1">Erinnerung 15 Min. vorher</span>
             {editReminderEnabled && (
