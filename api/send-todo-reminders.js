@@ -35,12 +35,12 @@ function toMinutes(hhmm) {
   return h * 60 + m
 }
 
-// Check if reminderTime falls in the window [windowStart, windowStart+15min)
+// Check if reminderTime falls in the window [windowStart, windowStart+16min)
 // Also handles midnight wrap-around
 function isInWindow(reminderTime, windowStart) {
   const r = toMinutes(reminderTime)
   const ws = toMinutes(windowStart)
-  const we = (ws + 15) % (24 * 60)
+  const we = (ws + 16) % (24 * 60)
   if (ws <= we) return r >= ws && r < we
   // Wraps midnight
   return r >= ws || r < we
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
 
     const tz = entry.timezone
     const { date: todayInTz, time: currentTimeInTz } = nowInTz(tz)
-    const windowStart = addMinutes(currentTimeInTz, 15)
+    const windowStart = addMinutes(currentTimeInTz, 14)
     const windowEnd = addMinutes(currentTimeInTz, 30)
 
     const dayTodos = todos?.[todayInTz] || []
