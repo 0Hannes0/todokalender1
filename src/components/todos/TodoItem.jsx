@@ -6,17 +6,32 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
   const [editLabel, setEditLabel] = useState(todo.label)
   const [editNotes, setEditNotes] = useState(todo.notes || '')
   const [editColor, setEditColor] = useState(todo.color)
+  const [editReminderEnabled, setEditReminderEnabled] = useState(todo.reminderEnabled || false)
+  const [editReminderTime, setEditReminderTime] = useState(todo.reminderTime || '')
 
   function saveEdit() {
     if (editLabel.trim()) {
-      onUpdate(todo.id, { label: editLabel.trim(), notes: editNotes, color: editColor })
+      onUpdate(todo.id, {
+        label: editLabel.trim(),
+        notes: editNotes,
+        color: editColor,
+        reminderEnabled: editReminderEnabled,
+        reminderTime: editReminderEnabled ? editReminderTime : '',
+      })
     }
     setEditing(false)
   }
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() }
-    if (e.key === 'Escape') { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color) }
+    if (e.key === 'Escape') {
+      setEditing(false)
+      setEditLabel(todo.label)
+      setEditNotes(todo.notes || '')
+      setEditColor(todo.color)
+      setEditReminderEnabled(todo.reminderEnabled || false)
+      setEditReminderTime(todo.reminderTime || '')
+    }
   }
 
   return (
@@ -45,6 +60,10 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
             <span className="block text-[11px] text-text-3 truncate mt-0.5">{todo.notes}</span>
           )}
         </button>
+
+        {todo.reminderEnabled && todo.reminderTime && !editing && (
+          <span className="text-[10px] text-text-3 flex-shrink-0" title={`Erinnerung: ${todo.reminderTime}`}>🔔</span>
+        )}
 
         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: todo.color }} />
       </div>
@@ -76,8 +95,29 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
             rows={3}
             className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] text-text placeholder-text-4 focus:outline-none focus:border-accent-mid resize-none overflow-hidden"
           />
+          {/* Erinnerung */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditReminderEnabled(v => !v)}
+              className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${editReminderEnabled ? 'bg-accent' : 'bg-surface-3'}`}
+              aria-label="Erinnerung aktivieren"
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${editReminderEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </button>
+            <span className="text-[12px] text-text-3 flex-1">Erinnerung 15 Min. vorher</span>
+            {editReminderEnabled && (
+              <input
+                type="time"
+                value={editReminderTime}
+                onChange={e => setEditReminderTime(e.target.value)}
+                className="bg-surface border border-border rounded-lg px-2 py-1 text-[12px] text-text focus:outline-none focus:border-accent-mid"
+                aria-label="Erinnerungszeit"
+              />
+            )}
+          </div>
           <div className="flex gap-2 justify-end">
-            <button onClick={() => { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color) }}
+            <button onClick={() => { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color); setEditReminderEnabled(todo.reminderEnabled || false); setEditReminderTime(todo.reminderTime || '') }}
               className="text-[12px] text-text-3 px-3 py-1.5 rounded-lg hover:bg-surface-3 transition-colors">
               Abbrechen
             </button>

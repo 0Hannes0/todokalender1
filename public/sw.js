@@ -1,15 +1,36 @@
 self.addEventListener('push', function(event) {
-  const data = event.data ? event.data.json() : {}
-  const title = data.title || 'TodoKalender'
-  const options = {
-    body: data.body || 'Zeit deine Ziele einzutragen!',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    tag: 'daily-reminder',
-    renotify: true,
-    data: { url: data.url || '/' },
+  try {
+    const data = event.data ? event.data.json() : {}
+
+    // Payload-Validierung
+    const title = typeof data.title === 'string' && data.title.length <= 100
+      ? data.title
+      : 'TodoKalender'
+    const body = typeof data.body === 'string' && data.body.length <= 300
+      ? data.body
+      : 'Zeit deine Ziele einzutragen!'
+    // Nur interne relative URLs erlauben
+    const url = typeof data.url === 'string' && /^\/[a-zA-Z0-9/_-]*$/.test(data.url)
+      ? data.url
+      : '/'
+
+    // Todo-spezifische Erinnerungen bekommen einen eigenen Tag damit sie tägliche nicht ersetzen
+    const tag = typeof data.tag === 'string' && data.tag.startsWith('todo-reminder-')
+      ? data.tag
+      : 'daily-reminder'
+
+    const options = {
+      body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag,
+      renotify: true,
+      data: { url },
+    }
+    event.waitUntil(self.registration.showNotification(title, options))
+  } catch (e) {
+    console.error('Push notification error:', e)
   }
-  event.waitUntil(self.registration.showNotification(title, options))
 })
 
 self.addEventListener('notificationclick', function(event) {
