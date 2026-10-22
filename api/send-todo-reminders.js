@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfiguration' })
   }
 
-  const secret = req.headers['authorization']
+  const secret = req.headers['authorization'] || `Bearer ${req.query.secret}`
   if (secret !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
