@@ -2,15 +2,11 @@
   "crons": [
     {
       "path": "/api/send-reminder",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/send-reminder",
-      "schedule": "0 21 * * *"
+      "schedule": "0 9,21 * * *"
     },
     {
       "path": "/api/send-todo-reminders",
-      "schedule": "* * * * *"
+      "schedule": "*/15 * * * *"
     }
   ],
   "headers": [

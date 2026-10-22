@@ -29,6 +29,23 @@ function addMinutes(hhmm, minutes) {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
 }
 
+// Convert "HH:MM" to total minutes since midnight
+function toMinutes(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+// Check if reminderTime falls in the window [windowStart, windowStart+15min)
+// Also handles midnight wrap-around
+function isInWindow(reminderTime, windowStart) {
+  const r = toMinutes(reminderTime)
+  const ws = toMinutes(windowStart)
+  const we = (ws + 15) % (24 * 60)
+  if (ws <= we) return r >= ws && r < we
+  // Wraps midnight
+  return r >= ws || r < we
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).end()
@@ -72,14 +89,16 @@ export default async function handler(req, res) {
 
     const tz = entry.timezone
     const { date: todayInTz, time: currentTimeInTz } = nowInTz(tz)
-    const targetTime = addMinutes(currentTimeInTz, 15)
+    // windowStart = currentTime + 15min, Cron läuft alle 15min
+    // Todos deren reminderTime im Fenster [now+15, now+30) liegt werden gesendet
+    const windowStart = addMinutes(currentTimeInTz, 15)
 
     const dayTodos = todos?.[todayInTz] || []
     for (const todo of dayTodos) {
       if (
         todo.reminderEnabled &&
         todo.reminderTime &&
-        todo.reminderTime === targetTime &&
+        isInWindow(todo.reminderTime, windowStart) &&
         !todo.completed
       ) {
         toSend.push({ user_id, todo_id: todo.id, todo_label: todo.label, subscription: entry.subscription })
