@@ -12,15 +12,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Returns "YYYY-MM-DD" for the current UTC date
-function todayUTC() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-// Returns "HH:MM" for the current UTC time
-function nowHHMM() {
-  const d = new Date()
-  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+// Returns { date: "YYYY-MM-DD", time: "HH:MM" } for a timezone right now
+function nowInTz(tz) {
+  const now = new Date()
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(now)
+  return { date, time }
 }
 
 // Add N minutes to "HH:MM", returns "HH:MM"
@@ -48,13 +45,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const today = todayUTC()
-  const currentTime = nowHHMM()
-
-  // Fetch all users' todos + push subscriptions in parallel
+  // Fetch all users' todos + push subscriptions (incl. timezone) in parallel
   const [{ data: allUserData, error: dataError }, { data: subs, error: subsError }] = await Promise.all([
     supabase.from('user_data').select('user_id, todos'),
-    supabase.from('push_subscriptions').select('user_id, subscription'),
+    supabase.from('push_subscriptions').select('user_id, subscription, timezone'),
   ])
 
   if (dataError) return res.status(500).json({ error: dataError.message })
@@ -64,22 +58,23 @@ export default async function handler(req, res) {
     return res.status(200).json({ sent: 0 })
   }
 
-  // Build lookup: user_id → push subscription
+  // Build lookup: user_id → { subscription, timezone }
   const subByUser = {}
-  for (const { user_id, subscription } of subs) {
-    subByUser[user_id] = subscription
+  for (const { user_id, subscription, timezone } of subs) {
+    subByUser[user_id] = { subscription, timezone: timezone || 'Europe/Berlin' }
   }
 
-  // Find todos that need a reminder right now (todoTime = currentTime + 15min)
-  const targetTime = addMinutes(currentTime, 15)
-
-  const toSend = [] // { user_id, todo_id, todo_label, subscription }
+  const toSend = []
 
   for (const { user_id, todos } of allUserData) {
-    const subscription = subByUser[user_id]
-    if (!subscription) continue
+    const entry = subByUser[user_id]
+    if (!entry) continue
 
-    const dayTodos = todos?.[today] || []
+    const tz = entry.timezone
+    const { date: todayInTz, time: currentTimeInTz } = nowInTz(tz)
+    const targetTime = addMinutes(currentTimeInTz, 15)
+
+    const dayTodos = todos?.[todayInTz] || []
     for (const todo of dayTodos) {
       if (
         todo.reminderEnabled &&
@@ -87,7 +82,7 @@ export default async function handler(req, res) {
         todo.reminderTime === targetTime &&
         !todo.completed
       ) {
-        toSend.push({ user_id, todo_id: todo.id, todo_label: todo.label, subscription })
+        toSend.push({ user_id, todo_id: todo.id, todo_label: todo.label, subscription: entry.subscription })
       }
     }
   }
@@ -97,8 +92,7 @@ export default async function handler(req, res) {
   }
 
   // Deduplicate: don't send the same todo reminder twice today
-  // Check sent_reminders table (create it if needed via upsert)
-  const reminderKeys = toSend.map(r => `${r.user_id}:${r.todo_id}:${today}`)
+  const reminderKeys = toSend.map(r => `${r.user_id}:${r.todo_id}:${new Date().toISOString().slice(0, 10)}`)
 
   const { data: alreadySent } = await supabase
     .from('sent_reminders')
@@ -107,6 +101,7 @@ export default async function handler(req, res) {
 
   const alreadySentSet = new Set((alreadySent || []).map(r => r.reminder_key))
 
+  const today = new Date().toISOString().slice(0, 10)
   const pending = toSend.filter(r => !alreadySentSet.has(`${r.user_id}:${r.todo_id}:${today}`))
 
   if (!pending.length) {
@@ -128,7 +123,7 @@ export default async function handler(req, res) {
 
   const sent = results.filter(r => r.status === 'fulfilled').length
 
-  // Mark as sent (only the ones that succeeded)
+  // Mark successful sends to avoid duplicates
   const sentKeys = pending
     .filter((_, i) => results[i].status === 'fulfilled')
     .map(r => ({ reminder_key: `${r.user_id}:${r.todo_id}:${today}`, sent_at: new Date().toISOString() }))
