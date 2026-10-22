@@ -82,18 +82,23 @@ export default async function handler(req, res) {
   }
 
   const toSend = []
+  const debug = []
 
   for (const { user_id, todos } of allUserData) {
     const entry = subByUser[user_id]
-    if (!entry) continue
+    if (!entry) {
+      debug.push({ user_id, issue: 'no_subscription' })
+      continue
+    }
 
     const tz = entry.timezone
     const { date: todayInTz, time: currentTimeInTz } = nowInTz(tz)
-    // Cron läuft alle 15 Min. Suche Todos deren reminderTime im Fenster
-    // [now+15, now+30) liegt → schicke Erinnerung jetzt (kommt 15 Min. vor dem Todo an)
     const windowStart = addMinutes(currentTimeInTz, 15)
+    const windowEnd = addMinutes(currentTimeInTz, 30)
 
     const dayTodos = todos?.[todayInTz] || []
+    debug.push({ user_id, tz, todayInTz, currentTimeInTz, windowStart, windowEnd, todosToday: dayTodos.length })
+
     for (const todo of dayTodos) {
       if (
         todo.reminderEnabled &&
@@ -107,7 +112,7 @@ export default async function handler(req, res) {
   }
 
   if (!toSend.length) {
-    return res.status(200).json({ sent: 0, checked: allUserData.length })
+    return res.status(200).json({ sent: 0, checked: allUserData.length, debug })
   }
 
   // Deduplicate: don't send the same todo reminder twice today
