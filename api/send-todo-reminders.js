@@ -89,8 +89,8 @@ export default async function handler(req, res) {
 
     const tz = entry.timezone
     const { date: todayInTz, time: currentTimeInTz } = nowInTz(tz)
-    // windowStart = currentTime + 15min, Cron läuft alle 15min
-    // Todos deren reminderTime im Fenster [now+15, now+30) liegt werden gesendet
+    // Cron läuft alle 15 Min. Suche Todos deren reminderTime im Fenster
+    // [now+15, now+30) liegt → schicke Erinnerung jetzt (kommt 15 Min. vor dem Todo an)
     const windowStart = addMinutes(currentTimeInTz, 15)
 
     const dayTodos = todos?.[todayInTz] || []
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
         isInWindow(todo.reminderTime, windowStart) &&
         !todo.completed
       ) {
-        toSend.push({ user_id, todo_id: todo.id, todo_label: todo.label, subscription: entry.subscription })
+        toSend.push({ user_id, todo_id: todo.id, todo_label: todo.label, todo_time: todo.reminderTime, subscription: entry.subscription })
       }
     }
   }
@@ -129,10 +129,10 @@ export default async function handler(req, res) {
 
   // Send push notifications
   const results = await Promise.allSettled(
-    pending.map(({ todo_label, subscription }) => {
+    pending.map(({ todo_label, todo_time, subscription }) => {
       const payload = JSON.stringify({
         title: `⏰ ${todo_label}`,
-        body: 'In 15 Minuten steht das auf deiner Liste.',
+        body: `Startet um ${todo_time} Uhr – in 15 Minuten.`,
         url: '/',
         tag: `todo-reminder-${Date.now()}`,
       })
