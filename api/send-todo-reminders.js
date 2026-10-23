@@ -170,7 +170,16 @@ export default async function handler(req, res) {
   const sent = results.filter(r => r.status === 'fulfilled').length
   const pushErrors = results
     .filter(r => r.status === 'rejected')
-    .map((r, i) => ({ todo_id: pending[i]?.todo_id, error: r.reason?.message || String(r.reason) }))
+    .map((r, i) => ({ user_id: pending[i]?.user_id, todo_id: pending[i]?.todo_id, statusCode: r.reason?.statusCode, error: r.reason?.message || String(r.reason) }))
+
+  // Remove expired/invalid subscriptions (HTTP 410 Gone) from DB so user re-subscribes
+  const expiredUserIds = pushErrors
+    .filter(e => e.statusCode === 410 || e.statusCode === 404)
+    .map(e => e.user_id)
+    .filter(Boolean)
+  if (expiredUserIds.length) {
+    await supabase.from('push_subscriptions').delete().in('user_id', expiredUserIds)
+  }
 
   // Mark successful sends to avoid duplicates
   const sentKeys = pending
@@ -181,5 +190,5 @@ export default async function handler(req, res) {
     await supabase.from('sent_reminders').insert(sentKeys)
   }
 
-  return res.status(200).json({ sent, total: pending.length, errors: pushErrors.length ? pushErrors : undefined })
+  return res.status(200).json({ sent, total: pending.length, errors: pushErrors.length ? pushErrors : undefined, expiredRemoved: expiredUserIds.length || undefined })
 }
