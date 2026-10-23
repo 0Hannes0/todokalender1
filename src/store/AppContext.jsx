@@ -514,6 +514,14 @@ export function AppProvider({ children }) {
     setDayField(weekKey, isoDate, 'fieber', active)
   }
 
+  function getStreakData() {
+    return stars.streak || null
+  }
+
+  function setStreakData(data) {
+    setStars(prev => ({ ...prev, streak: data }))
+  }
+
   const value = {
     state: uiState,
     dispatch,
@@ -525,6 +533,7 @@ export function AppProvider({ children }) {
       getWeekStars, getMonthStars, setDayField,
       addTrainingSession, removeTrainingSession, setWeekTrainingFlag,
       lockWeek, setJokerDay, setKrankDay,
+      getStreakData, setStreakData,
     },
   }
 
