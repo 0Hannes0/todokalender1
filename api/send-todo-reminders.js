@@ -63,14 +63,15 @@ export default async function handler(req, res) {
   }
 
   // Fetch all users' todos + push subscriptions (incl. timezone) in parallel
-  // Retry once on failure to handle transient Supabase connection errors
-  async function fetchWithRetry() {
+  // Retry once on any failure (e.g. transient 500 or JWT clock-skew from Vercel edge)
+  async function fetchData() {
     const [r1, r2] = await Promise.all([
       supabase.from('user_data').select('user_id, todos'),
       supabase.from('push_subscriptions').select('user_id, subscription, timezone'),
     ])
-    if ((r1.error || r2.error) && !r1.data && !r2.data) {
-      // retry once
+    if (r1.error || r2.error) {
+      // Small delay to let Supabase clock-skew resolve, then retry once
+      await new Promise(resolve => setTimeout(resolve, 500))
       return Promise.all([
         supabase.from('user_data').select('user_id, todos'),
         supabase.from('push_subscriptions').select('user_id, subscription, timezone'),
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
     return [r1, r2]
   }
 
-  const [{ data: allUserData, error: dataError }, { data: subs, error: subsError }] = await fetchWithRetry()
+  const [{ data: allUserData, error: dataError }, { data: subs, error: subsError }] = await fetchData()
 
   if (dataError) return res.status(500).json({ error: dataError.message })
   if (subsError) return res.status(500).json({ error: subsError.message })
@@ -162,6 +163,9 @@ export default async function handler(req, res) {
   )
 
   const sent = results.filter(r => r.status === 'fulfilled').length
+  const pushErrors = results
+    .filter(r => r.status === 'rejected')
+    .map((r, i) => ({ todo_id: pending[i]?.todo_id, error: r.reason?.message || String(r.reason) }))
 
   // Mark successful sends to avoid duplicates
   const sentKeys = pending
@@ -172,5 +176,5 @@ export default async function handler(req, res) {
     await supabase.from('sent_reminders').insert(sentKeys)
   }
 
-  return res.status(200).json({ sent, total: pending.length })
+  return res.status(200).json({ sent, total: pending.length, errors: pushErrors.length ? pushErrors : undefined })
 }
