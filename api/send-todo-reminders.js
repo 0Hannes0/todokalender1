@@ -103,6 +103,8 @@ export default async function handler(req, res) {
   const toSend = []
   const debug = []
 
+  const forceUserId = req.query.force_user // bypass window + dedup for one user (debug only)
+
   for (const { user_id, todos } of allUserData) {
     const entry = subByUser[user_id]
     if (!entry) {
@@ -121,6 +123,16 @@ export default async function handler(req, res) {
       .map(t => ({ id: t.id, label: t.label, reminderTime: t.reminderTime, completed: t.completed, inWindow: isInWindow(t.reminderTime, windowStart) }))
     debug.push({ user_id, tz, todayInTz, currentTimeInTz, windowStart, windowEnd, todosToday: dayTodos.length, reminderTodos, pushService: entry.endpointPrefix })
 
+    // force_user: send ALL reminder-enabled todos for this user regardless of window
+    if (forceUserId && user_id === forceUserId) {
+      for (const todo of dayTodos) {
+        if (todo.reminderEnabled && todo.reminderTime && !todo.completed) {
+          toSend.push({ user_id, todo_id: todo.id, todo_label: todo.label, todo_time: todo.reminderTime, subscription: entry.subscription, forced: true })
+        }
+      }
+      continue
+    }
+
     for (const todo of dayTodos) {
       if (
         todo.reminderEnabled &&
@@ -137,15 +149,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ sent: 0, checked: allUserData.length, debug })
   }
 
-  // Deduplicate: don't send the same todo reminder twice today
+  // Deduplicate: don't send the same todo reminder twice today (skip for force mode)
   const reminderKeys = toSend.map(r => `${r.user_id}:${r.todo_id}:${new Date().toISOString().slice(0, 10)}`)
+  const alreadySentSet = new Set()
 
-  const { data: alreadySent } = await supabase
-    .from('sent_reminders')
-    .select('reminder_key')
-    .in('reminder_key', reminderKeys)
-
-  const alreadySentSet = new Set((alreadySent || []).map(r => r.reminder_key))
+  if (!forceUserId) {
+    const { data: alreadySent } = await supabase
+      .from('sent_reminders')
+      .select('reminder_key')
+      .in('reminder_key', reminderKeys)
+    ;(alreadySent || []).forEach(r => alreadySentSet.add(r.reminder_key))
+  }
 
   const today = new Date().toISOString().slice(0, 10)
   const pending = toSend.filter(r => !alreadySentSet.has(`${r.user_id}:${r.todo_id}:${today}`))
@@ -168,9 +182,15 @@ export default async function handler(req, res) {
   )
 
   const sent = results.filter(r => r.status === 'fulfilled').length
-  const pushErrors = results
-    .filter(r => r.status === 'rejected')
-    .map((r, i) => ({ user_id: pending[i]?.user_id, todo_id: pending[i]?.todo_id, statusCode: r.reason?.statusCode, error: r.reason?.message || String(r.reason) }))
+  const pushResults = results.map((r, i) => ({
+    user_id: pending[i]?.user_id,
+    todo_id: pending[i]?.todo_id,
+    status: r.status,
+    statusCode: r.status === 'fulfilled' ? r.value?.statusCode : r.reason?.statusCode,
+    headers: r.status === 'fulfilled' ? r.value?.headers : r.reason?.headers,
+    body: r.status === 'rejected' ? (r.reason?.body || r.reason?.message) : undefined,
+  }))
+  const pushErrors = pushResults.filter(r => r.status === 'rejected')
 
   // Remove expired/invalid subscriptions (HTTP 410 Gone) from DB so user re-subscribes
   const expiredUserIds = pushErrors
@@ -190,5 +210,5 @@ export default async function handler(req, res) {
     await supabase.from('sent_reminders').insert(sentKeys)
   }
 
-  return res.status(200).json({ sent, total: pending.length, errors: pushErrors.length ? pushErrors : undefined, expiredRemoved: expiredUserIds.length || undefined })
+  return res.status(200).json({ sent, total: pending.length, pushResults, expiredRemoved: expiredUserIds.length || undefined })
 }
