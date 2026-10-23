@@ -94,9 +94,9 @@ export default async function handler(req, res) {
   for (const { user_id, subscription, timezone } of subs) {
     const ep = subscription?.endpoint || ''
     const endpointPrefix = ep.includes('fcm.googleapis.com') ? 'FCM(Chrome/Android)'
-      : ep.includes('push.apple.com') ? 'APNs(iOS-PWA)'
+      : ep.includes('push.apple.com') ? `APNs(iOS-PWA):${ep.substring(0, 60)}`
       : ep.includes('mozilla.com') ? 'Mozilla(Firefox)'
-      : ep.substring(0, 40)
+      : ep.substring(0, 60)
     subByUser[user_id] = { subscription, timezone: timezone || 'Europe/Berlin', endpointPrefix }
   }
 
