@@ -170,7 +170,7 @@ export default async function handler(req, res) {
 
   // Send push notifications
   const results = await Promise.allSettled(
-    pending.map(({ todo_label, todo_time, subscription }) => {
+    pending.map(({ todo_id, todo_label, todo_time, subscription }) => {
       const payload = JSON.stringify({
         title: `⏰ ${todo_label}`,
         body: `Startet um ${todo_time} Uhr – in 15 Minuten.`,
