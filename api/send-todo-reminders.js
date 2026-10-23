@@ -63,10 +63,23 @@ export default async function handler(req, res) {
   }
 
   // Fetch all users' todos + push subscriptions (incl. timezone) in parallel
-  const [{ data: allUserData, error: dataError }, { data: subs, error: subsError }] = await Promise.all([
-    supabase.from('user_data').select('user_id, todos'),
-    supabase.from('push_subscriptions').select('user_id, subscription, timezone'),
-  ])
+  // Retry once on failure to handle transient Supabase connection errors
+  async function fetchWithRetry() {
+    const [r1, r2] = await Promise.all([
+      supabase.from('user_data').select('user_id, todos'),
+      supabase.from('push_subscriptions').select('user_id, subscription, timezone'),
+    ])
+    if ((r1.error || r2.error) && !r1.data && !r2.data) {
+      // retry once
+      return Promise.all([
+        supabase.from('user_data').select('user_id, todos'),
+        supabase.from('push_subscriptions').select('user_id, subscription, timezone'),
+      ])
+    }
+    return [r1, r2]
+  }
+
+  const [{ data: allUserData, error: dataError }, { data: subs, error: subsError }] = await fetchWithRetry()
 
   if (dataError) return res.status(500).json({ error: dataError.message })
   if (subsError) return res.status(500).json({ error: subsError.message })
