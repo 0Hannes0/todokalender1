@@ -89,10 +89,15 @@ export default async function handler(req, res) {
     return res.status(200).json({ sent: 0 })
   }
 
-  // Build lookup: user_id → { subscription, timezone }
+  // Build lookup: user_id → { subscription, timezone, endpointPrefix }
   const subByUser = {}
   for (const { user_id, subscription, timezone } of subs) {
-    subByUser[user_id] = { subscription, timezone: timezone || 'Europe/Berlin' }
+    const ep = subscription?.endpoint || ''
+    const endpointPrefix = ep.includes('fcm.googleapis.com') ? 'FCM(Chrome/Android)'
+      : ep.includes('push.apple.com') ? 'APNs(iOS-PWA)'
+      : ep.includes('mozilla.com') ? 'Mozilla(Firefox)'
+      : ep.substring(0, 40)
+    subByUser[user_id] = { subscription, timezone: timezone || 'Europe/Berlin', endpointPrefix }
   }
 
   const toSend = []
@@ -114,7 +119,7 @@ export default async function handler(req, res) {
     const reminderTodos = dayTodos
       .filter(t => t.reminderEnabled && t.reminderTime)
       .map(t => ({ id: t.id, label: t.label, reminderTime: t.reminderTime, completed: t.completed, inWindow: isInWindow(t.reminderTime, windowStart) }))
-    debug.push({ user_id, tz, todayInTz, currentTimeInTz, windowStart, windowEnd, todosToday: dayTodos.length, reminderTodos })
+    debug.push({ user_id, tz, todayInTz, currentTimeInTz, windowStart, windowEnd, todosToday: dayTodos.length, reminderTodos, pushService: entry.endpointPrefix })
 
     for (const todo of dayTodos) {
       if (
