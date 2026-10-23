@@ -1,3 +1,4 @@
+// v2 - cache bust
 self.addEventListener('fetch', function(event) {
   // Passthrough - required for iOS PWA to treat this as a valid service worker
   event.respondWith(fetch(event.request))
