@@ -7,10 +7,6 @@
     {
       "path": "/api/send-reminder",
       "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/send-todo-reminders",
-      "schedule": "*/15 * * * *"
     }
   ],
   "headers": [
