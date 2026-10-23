@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SwipeToDelete } from '../ui/SwipeToDelete'
+import { isPushEnabled } from '../../lib/pushNotifications'
 
 export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
   const [editing, setEditing] = useState(false)
@@ -8,6 +9,11 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
   const [editColor, setEditColor] = useState(todo.color)
   const [editReminderEnabled, setEditReminderEnabled] = useState(todo.reminderEnabled || false)
   const [editReminderTime, setEditReminderTime] = useState(todo.reminderTime || '')
+  const [pushActive, setPushActive] = useState(true)
+
+  useEffect(() => {
+    if (editing) isPushEnabled().then(setPushActive)
+  }, [editing])
 
   function saveEdit() {
     if (editLabel.trim()) {
@@ -116,6 +122,9 @@ export function TodoItem({ todo, onToggle, onDelete, onUpdate }) {
               />
             )}
           </div>
+          {editReminderEnabled && !pushActive && (
+            <p className="text-[11px] text-yellow-500">⚠️ Push-Benachrichtigungen sind deaktiviert. Aktiviere zuerst "Reminder" in den Zielen.</p>
+          )}
           <div className="flex gap-2 justify-end">
             <button onClick={() => { setEditing(false); setEditLabel(todo.label); setEditNotes(todo.notes || ''); setEditColor(todo.color); setEditReminderEnabled(todo.reminderEnabled || false); setEditReminderTime(todo.reminderTime || '') }}
               className="text-[12px] text-text-3 px-3 py-1.5 rounded-lg hover:bg-surface-3 transition-colors">
