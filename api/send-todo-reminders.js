@@ -175,7 +175,7 @@ export default async function handler(req, res) {
         title: `⏰ ${todo_label}`,
         body: `Startet um ${todo_time} Uhr – in 15 Minuten.`,
         url: '/',
-        tag: `todo-reminder-${Date.now()}`,
+        tag: `todo-reminder-${todo_id}`,
       })
       return webpush.sendNotification(subscription, payload)
     })

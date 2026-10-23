@@ -1,3 +1,8 @@
+self.addEventListener('fetch', function(event) {
+  // Passthrough - required for iOS PWA to treat this as a valid service worker
+  event.respondWith(fetch(event.request))
+})
+
 self.addEventListener('push', function(event) {
   try {
     const data = event.data ? event.data.json() : {}
@@ -14,17 +19,13 @@ self.addEventListener('push', function(event) {
       ? data.url
       : '/'
 
-    // Todo-spezifische Erinnerungen bekommen einen eigenen Tag damit sie tägliche nicht ersetzen
-    const tag = typeof data.tag === 'string' && data.tag.startsWith('todo-reminder-')
-      ? data.tag
-      : 'daily-reminder'
+    const tag = typeof data.tag === 'string' ? data.tag : 'todo-reminder'
 
     const options = {
       body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag,
-      renotify: true,
       data: { url },
     }
     event.waitUntil(self.registration.showNotification(title, options))
