@@ -110,7 +110,10 @@ export default async function handler(req, res) {
     const windowEnd = addMinutes(currentTimeInTz, 30)
 
     const dayTodos = todos?.[todayInTz] || []
-    debug.push({ user_id, tz, todayInTz, currentTimeInTz, windowStart, windowEnd, todosToday: dayTodos.length })
+    const reminderTodos = dayTodos
+      .filter(t => t.reminderEnabled && t.reminderTime)
+      .map(t => ({ id: t.id, label: t.label, reminderTime: t.reminderTime, completed: t.completed, inWindow: isInWindow(t.reminderTime, windowStart) }))
+    debug.push({ user_id, tz, todayInTz, currentTimeInTz, windowStart, windowEnd, todosToday: dayTodos.length, reminderTodos })
 
     for (const todo of dayTodos) {
       if (
